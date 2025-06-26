@@ -1,0 +1,63 @@
+#' Get test statistics for a given trial.
+#'
+#' @param dat_initial Initial time-to-event dataset returned from \link{simu_enrich_trial}.
+#' @param dat_additional Additional time-to-event dataset returned from \link{simu_enrich_trial}.
+#' @param targetEvents A numeric vector of length 2, specifying the number of events for:
+#'        FA_S (final analysis in S), and  FA_F (final analysis in F).
+#' @param expand 0=No, 1=Yes
+#'
+#' @return It returns a list of test statistics used for later adjustments.
+#' @importFrom dplyr filter
+#' @export
+#'
+#' @examples
+#' d <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
+#' getZstats_FA(d, targetEvents = c(210, 280, 420))
+getZstats_FA <- function(dat_initial, dat_additional, targetEvents, expand){
+
+  ## split dataset by subgroup
+  if (expand) {
+    dat <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup)
+    targetEvents_new <- c(targetEvents[2], targetEvents[3])
+  } else {
+    dat <- dat_initial
+    targetEvents_new <- c(targetEvents[1], targetEvents[3])
+  }
+
+  dS <- dat %>% filter(.data$subgroup==1)
+  dF <- dat_initial
+
+  ## initial results
+  z.S <- z.F <- rep(NA, 2) # z-statistics
+  p.S <- p.F <- rep(NA, 2) # p-values
+  obsEvents.S <- obsEvents.F <- rep(NA, 2) # observed number of events
+
+
+  ## cut data at FA when S reaches certain percent
+  # population S
+  d <- cut_by_event(dS, targetEvents = targetEvents_new[1])
+  FA_time_S <- d$calendarCutoff[1]
+  res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut,
+                           group = d$trt, STRATA = NULL)
+  z.S[1] <- res$z # non-adjusted Z statistic
+  p.S[1] <- res$p
+  obsEvents.S[1] <- sum(d$eventCut)
+  nS <- nrow(d)
+
+
+  ## cut data at FA when F reaches certain percent
+  # population F
+  d <- cut_by_event(dF, targetEvents = targetEvents_new[2])
+  FA_time_F <- d$calendarCutoff[1]
+  res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut,
+                           group = d$trt, STRATA = NULL)
+  z.F[2] <- res$z # non-adjusted Z statistic
+  p.F[2] <- res$p
+  obsEvents.F[2] <- sum(res$obs)
+  nF <- nrow(d)
+
+  # resulted test statistic
+  return(list(z.S = z.S, z.F = z.F, p.S = p.S, p.F = p.F,
+              obsEvents.S = obsEvents.S, obsEvents.F = obsEvents.F,
+              nS.FA = nS, nF.FA = nF))
+}
