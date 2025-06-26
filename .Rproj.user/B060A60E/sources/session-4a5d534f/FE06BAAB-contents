@@ -29,9 +29,9 @@ getZstats_FA <- function(dat_initial, dat_additional, targetEvents, expand){
   dF <- dat_initial
 
   ## initial results
-  z.S <- z.F <- rep(NA, 2) # z-statistics
-  p.S <- p.F <- rep(NA, 2) # p-values
-  obsEvents.S <- obsEvents.F <- rep(NA, 2) # observed number of events
+  z.S <- z.F <- NA # z-statistics
+  p.S <- p.F <- NA # p-values
+  obsEvents.S <- obsEvents.F <- NA # observed number of events
 
 
   ## cut data at FA when S reaches certain percent
@@ -40,9 +40,9 @@ getZstats_FA <- function(dat_initial, dat_additional, targetEvents, expand){
   FA_time_S <- d$calendarCutoff[1]
   res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut,
                            group = d$trt, STRATA = NULL)
-  z.S[1] <- res$z # non-adjusted Z statistic
-  p.S[1] <- res$p
-  obsEvents.S[1] <- sum(d$eventCut)
+  z.S <- res$z # non-adjusted Z statistic
+  p.S <- res$p
+  obsEvents.S <- sum(d$eventCut)
   nS <- nrow(d)
 
 
@@ -52,9 +52,9 @@ getZstats_FA <- function(dat_initial, dat_additional, targetEvents, expand){
   FA_time_F <- d$calendarCutoff[1]
   res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut,
                            group = d$trt, STRATA = NULL)
-  z.F[2] <- res$z # non-adjusted Z statistic
-  p.F[2] <- res$p
-  obsEvents.F[2] <- sum(res$obs)
+  z.F <- res$z # non-adjusted Z statistic
+  p.F <- res$p
+  obsEvents.F <- sum(res$obs)
   nF <- nrow(d)
 
   # resulted test statistic
