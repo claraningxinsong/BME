@@ -11,8 +11,9 @@
 #' @export
 #'
 #' @examples
-#' d <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
-#' getZstats_FA(d, targetEvents = c(210, 280, 420))
+#' d1 <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
+#' d2 <- simu_enrich_trial(n = 100, prop_S = 0.5, duration = 20)
+#' getZstats_FA(d1, d2, targetEvents = c(210, 280, 420), expand=0)
 getZstats_FA <- function(dat_initial, dat_additional, targetEvents, expand){
 
   ## split dataset by subgroup
