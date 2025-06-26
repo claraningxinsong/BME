@@ -1,0 +1,6 @@
+"0","dat_initial <- simu_enrich_trial(n = 600, prop_S = 0.5, ratio = 1, duration = 20)"
+"0","dat_additional <- simu_enrich_trial(n = 200, prop_S = 0.5, ratio = 1, duration = 20) %>% "
+"0","  filter(subgroup == 1) %>%"
+"0","  dplyr::mutate(enterTime = .data$enterTime + 20, calendarTime = .data$calendarTime + 20)"
+"0",""
+"0","dat_full <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup)"
