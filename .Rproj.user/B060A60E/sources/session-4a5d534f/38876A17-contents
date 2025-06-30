@@ -1,0 +1,526 @@
+---
+title: "Adaptive Enrichment Design"
+author: "Haiming Zhou"
+date: '2024-08-28'
+output:
+  html_document:
+    number_sections: yes
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = FALSE)
+```
+
+**Load packages**
+```{r}
+rm(list=ls())
+#library(devtools)
+#if (!require("enrichDesign")) devtools::install_github("wonderzhm/enrichDesign")
+library(knitr)
+library(gsDesign)
+library(dplyr)
+library(rpact)
+library(ggplot2)
+library(ggh4x)
+library(ggpubr)
+library(scales)
+library(parallel)
+library(doParallel)
+library(enrichDesign)
+```
+
+
+# Adaptive Enrichment Designs
+For simplicity, we consider two-stage enrichment designs, i.e., one interim analysis for population selection without efficacy testing and one final analysis for testing the efficacy. Let $H_0^{{g}}$ denote the null hypotheses of identical survival distributions within the population $g$ for $g\in\{S,F\}$, where $S$ and $F$ refer to the subpopulation and full population, respectively. Let $Z_{gk}$ denote the one-sided log-rank test statistic for testing $H_0^{{g}}$ at $k$th analysis for $g\in\{S,F\}$ and $k=1, 2$, where $k=1$ and $k=2$ refers to IA and FA, respectively. Note that $Z_{Fk}$ should be stratified with strata from $S$ and its complement $S^c$. Then $(\sqrt{e_{g2}}Z_{g2} - \sqrt{e_{g1}}Z_{g1})/(\sqrt{e_{g2}-e_{g1}})\overset{set}{=}Z_{g,1\rightarrow 2}$ asymptotically follows a standard normal distribution and is independent with $Z_{g1}$ for $g\in\{S,F\}$, where $e_{gk}$ is the observed number of events in population $g$ at the $k$th analysis. The stage-wise p-value $p_{gk}$ for testing $H_0^{{g}}$ at the $k$th analysis can be defined as follows for $k=1,2$. 
+\begin{equation}
+\begin{aligned}
+p_{g1} &= 1 - \Phi(Z_{g1}) \\
+p_{g,1\rightarrow 2} &= 1- \Phi(Z_{g,1\rightarrow 2}),
+\end{aligned}
+\end{equation}
+where $\Phi(\cdot)$ is the CDF of a standard normal distribution. 
+
+An R package `enrichDesign` will be developed. The first function `simu.trial` will generate large number of trials and return the following statistics for each trial: $Z_{gk}$, $Z_{g,1\rightarrow 2}$, $p_{gk}$, $p_{g,1\rightarrow 2}$, $e_{gk}$.
+
+## Selection Rules at IA
+Let $HR^{g}$ denote the estimated hazard ratio for population $g$ at the IA. We will consider the following selection rule:
+
+* Continue to $F$ if $HR^{S^c}<\pi_0^{S^c}$.
+* Continue to $S$ if $HR^{S^c}>\pi_1^{S^c}$. 
+* Continue to both $S$ and $F$ otherwise. 
+
+## Multiplicity adjustment
+We consider two methods: Simes and Dunnett. Let $p_{SF, 1}$ denote the adjusted p-value based on elementary test statistics $Z_{S1}$ and $Z_{F1}$. Let $p_{SF, 1\rightarrow 2}$ denote the adjusted p-value based on test statistics  $Z_{S,1\rightarrow 2}$ and $Z_{F,1\rightarrow 2}$. When using Dunnett adjustment, the correlation between $Z_{S1}$ and $Z_{F1}$ is given by $\sqrt{e_{S1}/e_{F1}}$, and the correlation between $Z_{S,1\rightarrow 2}$ and $Z_{F,1\rightarrow 2}$ is $\sqrt{(e_{S2}-e_{S1})/(e_{F2}-e_{F1})}$. 
+
+Since there is no alpha spending at AI, the z-scale rejection boundary at FA is $c=\phi^{-1}(1-\alpha)$.
+
+If the decision is made to continue the trial for $S$ and $H_0^{{S}}$ is primary, then at FA, $H_0^{{S}}$ can be rejected if 
+\begin{equation}
+w \Phi^{-1}(1-p_{SF, 1}) + \sqrt{1-w^2}\phi^{-1}(1-p_{S, 1\rightarrow 2}) > c \text{ and } Z_{S2} > c,
+\end{equation}
+where $w=\sqrt{e_{S1}/e_{S2}}$. 
+
+If the decision is made to continue the trial for $F$ and $H_0^{{F}}$ is primary, then at FA, $H_0^{{F}}$ can be rejected if 
+\begin{equation}
+w \Phi^{-1}(1-p_{SF, 1}) + \sqrt{1-w^2}\phi^{-1}(1-p_{F, 1\rightarrow 2}) > c \text{ and } Z_{F2} > c,
+\end{equation}
+where $w=\sqrt{e_{F1}/e_{F2}}$. 
+
+If the decision is made to continue the trial for $F$ and $H_0^{{S}}$ and $H_0^{{F}}$ are co-primary, then at FA, $H_0^{{S}}$ can be rejected if 
+\begin{equation}
+w \Phi^{-1}(1-p_{SF, 1}) + \sqrt{1-w^2}\phi^{-1}(1-p_{SF, 1\rightarrow 2}) > c \text{ and } Z_{S2} > c,
+\end{equation}
+where $w=\sqrt{e_{S1}/e_{S2}}$, and $H_0^{{F}}$ can be rejected if 
+\begin{equation}
+w \Phi^{-1}(1-p_{SF, 1}) + \sqrt{1-w^2}\phi^{-1}(1-p_{SF, 1\rightarrow 2}) > c \text{ and } Z_{F2} > c,
+\end{equation}
+where $w=\sqrt{e_{F1}/e_{F2}}$. 
+
+
+# Group Sequential Designs (GSDs)
+## GSD-A: fultility on $S^c$
+In this design, $H_0^{{S}}$ is primary and $H_0^{{F}}$ will only be tested at FA if $H_0^{{S}}$ is rejected at FA. A non-binding futility will be added at IA for checking $S^c$. Continue to $S$ only if $HR^{S^c}>\pi_1^{S^c}$. 
+
+# Simulation
+Suppose we will enroll $400$ subjects for the $S$ population and the accrual duration is 20 months. Assume the target number of events for $S$ is $280$ (i.e. 70% maturity), and the IA will be performed when the number of events from the $S$ population reach $112$ (i.e. 40% information fraction). Assume the target hazard ratio is 0.7 for $S$ and $0.85$ for $S^c$. We will consider two prevalence rate: 0.5 and 0.8. 
+
+## When prevalence rate is 0.5
+We will enroll $400$ subjects for the $S^c$ population. The accrual duration is also 20 months. The following code helps find the hazard ratio threshold for $S$, $F$ and $S^c$. 
+```{r}
+seed <- 202409
+nclust <- 10
+nsim_per_cluster <- 1000 # set at least 1000 for final report
+pr <- 0.5
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.4
+nS <- 400
+nF <- 400/pr
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+(dSpower <- thresholds$GSD.reject.S) # power for S if S is primary
+(dFpower <- thresholds$GSD.reject.F) # power for F if F is primary
+```
+
+### Power analysis 
+```{r}
+HRs <- cbind(hrS  = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+             hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2))
+results <- matrix(NA, nrow = 7, ncol = 8)
+colnames(results) <- c("Reject.SF", "Reject.S", "Reject.F", "Primary.SF", 
+                       "Primary.S", "Primary.F", "samplesize", "Futile.Sc")
+designs <- c(rep("AED", 2), rep("GSD", 3), rep("AED2", 2))
+multiplicity <- c(c("dunnett", "simes"), "ht", c("dunnett", "simes"), c("dunnett", "simes"))
+outputs <- data.frame()
+res.list <- list()
+for(i in 1:nrow(HRs)){
+  hrS <- HRs[i,1]
+  hrSc <- HRs[i,2]
+  res <- getOC_par(ncore=nclust, seed = seed, nsim = nsim_per_cluster, n = nF, prop_S = pr, 
+                   duration = accrual_duration, targetEvents.S = targetEvents_S, 
+                   HR.Sc.threshold = HR.Sc.threshold, HR.S.threshold = HR.S.threshold,
+                   HR.F.threshold = HR.F.threshold, hazard_S = log(2)/c(medS_con, medS_con/hrS), 
+                   hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), dropout_S = c(0, 0), 
+                   dropout_Sc = c(0, 0), w = 1, ratio = 1, alpha = alpha)
+  res.list[[i]] <- res
+  # reject S or F. 
+  results[,1] <- sapply(res, function(x) mean(apply(x[,1:2], 1, any)))
+  # reject S
+  results[,2] <- sapply(res, function(x) mean(x[,1]))
+  # reject F
+  results[,3] <- sapply(res, function(x) mean(x[,2]))
+  # selecting dual primary
+  results[,4] <- sapply(res, function(x) mean(x[,3] & x[,4]))
+  # selecting S primary
+  results[,5] <- sapply(res, function(x) mean(x[,3] & !x[,4]))
+  # selecting F primary
+  results[,6] <- sapply(res, function(x) mean(!x[,3] & x[,4]))
+  # sample size
+  results[,7] <- sapply(res, function(x) mean(x[,5]))
+  # Sc futility rate
+  results[,8] <- sapply(res, function(x) mean(x[,6]))
+  ddd <- as.data.frame(results) %>% 
+    mutate(designs = designs, multiplicity = multiplicity, .before = 1) %>% 
+    mutate(scenario = i, .before = 1) %>% 
+    mutate(hrS = hrS, hrSc = hrSc, .after = scenario)
+  if(i==1){
+    outputs <- ddd
+  }else{
+    outputs <- bind_rows(outputs, ddd)
+  }
+}
+res.pr50 <- res.list
+(power.pr50 <- outputs)
+save.image("results.RData")
+```
+
+## When prevalence rate is 0.8
+We will enroll $100$ subjects for the $S^c$ population. The accrual duration is also 20 months. The following code helps find the hazard ratio threshold for $S$, $F$ and $S^c$. 
+```{r}
+seed <- 202409
+nclust <- 10
+nsim_per_cluster <- 1000 # set at least 1000 for final report
+pr <- 0.8
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.4
+nS <- 400
+nF <- 400/pr
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+(dSpower <- thresholds$GSD.reject.S) # power for S if S is primary
+(dFpower <- thresholds$GSD.reject.F) # power for F if F is primary
+```
+
+### Power analysis 
+```{r}
+HRs <- cbind(hrS  = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+             hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2))
+results <- matrix(NA, nrow = 7, ncol = 8)
+colnames(results) <- c("Reject.SF", "Reject.S", "Reject.F", "Primary.SF", 
+                       "Primary.S", "Primary.F", "samplesize", "Futile.Sc")
+designs <- c(rep("AED", 2), rep("GSD", 3), rep("AED2", 2))
+multiplicity <- c(c("dunnett", "simes"), "ht", c("dunnett", "simes"), c("dunnett", "simes"))
+outputs <- data.frame()
+res.list <- list()
+for(i in 1:nrow(HRs)){
+  hrS <- HRs[i,1]
+  hrSc <- HRs[i,2]
+  res <- getOC_par(ncore=nclust, seed = seed, nsim = nsim_per_cluster, n = nF, prop_S = pr, 
+                   duration = accrual_duration, targetEvents.S = targetEvents_S, 
+                   HR.Sc.threshold = HR.Sc.threshold, HR.S.threshold = HR.S.threshold,
+                   HR.F.threshold = HR.F.threshold, hazard_S = log(2)/c(medS_con, medS_con/hrS), 
+                   hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), dropout_S = c(0, 0), 
+                   dropout_Sc = c(0, 0), w = 1, ratio = 1, alpha = alpha)
+  res.list[[i]] <- res
+  # reject S or F. 
+  results[,1] <- sapply(res, function(x) mean(apply(x[,1:2], 1, any)))
+  # reject S
+  results[,2] <- sapply(res, function(x) mean(x[,1]))
+  # reject F
+  results[,3] <- sapply(res, function(x) mean(x[,2]))
+  # selecting dual primary
+  results[,4] <- sapply(res, function(x) mean(x[,3] & x[,4]))
+  # selecting S primary
+  results[,5] <- sapply(res, function(x) mean(x[,3] & !x[,4]))
+  # selecting F primary
+  results[,6] <- sapply(res, function(x) mean(!x[,3] & x[,4]))
+  # sample size
+  results[,7] <- sapply(res, function(x) mean(x[,5]))
+  # Sc futility rate
+  results[,8] <- sapply(res, function(x) mean(x[,6]))
+  ddd <- as.data.frame(results) %>% 
+    mutate(designs = designs, multiplicity = multiplicity, .before = 1) %>% 
+    mutate(scenario = i, .before = 1) %>% 
+    mutate(hrS = hrS, hrSc = hrSc, .after = scenario)
+  if(i==1){
+    outputs <- ddd
+  }else{
+    outputs <- bind_rows(outputs, ddd)
+  }
+}
+res.pr80 <- res.list
+(power.pr80 <- outputs)
+save.image("results.RData")
+```
+
+
+## When prevalence rate is 0.5 and IF is 0.5
+We will enroll $400$ subjects for the $S^c$ population. The accrual duration is also 20 months. The following code helps find the hazard ratio threshold for $S$, $F$ and $S^c$. 
+```{r}
+seed <- 202409
+nclust <- 10
+nsim_per_cluster <- 1000 # set at least 1000 for final report
+pr <- 0.5
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.5
+nS <- 400
+nF <- 400/pr
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+(dSpower <- thresholds$GSD.reject.S) # power for S if S is primary
+(dFpower <- thresholds$GSD.reject.F) # power for F if F is primary
+```
+
+### Power analysis 
+```{r}
+HRs <- cbind(hrS  = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+             hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2))
+results <- matrix(NA, nrow = 7, ncol = 8)
+colnames(results) <- c("Reject.SF", "Reject.S", "Reject.F", "Primary.SF", 
+                       "Primary.S", "Primary.F", "samplesize", "Futile.Sc")
+designs <- c(rep("AED", 2), rep("GSD", 3), rep("AED2", 2))
+multiplicity <- c(c("dunnett", "simes"), "ht", c("dunnett", "simes"), c("dunnett", "simes"))
+outputs <- data.frame()
+res.list <- list()
+for(i in 1:nrow(HRs)){
+  hrS <- HRs[i,1]
+  hrSc <- HRs[i,2]
+  res <- getOC_par(ncore=nclust, seed = seed, nsim = nsim_per_cluster, n = nF, prop_S = pr, 
+                   duration = accrual_duration, targetEvents.S = targetEvents_S, 
+                   HR.Sc.threshold = HR.Sc.threshold, HR.S.threshold = HR.S.threshold,
+                   HR.F.threshold = HR.F.threshold, hazard_S = log(2)/c(medS_con, medS_con/hrS), 
+                   hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), dropout_S = c(0, 0), 
+                   dropout_Sc = c(0, 0), w = 1, ratio = 1, alpha = alpha)
+  res.list[[i]] <- res
+  # reject S or F. 
+  results[,1] <- sapply(res, function(x) mean(apply(x[,1:2], 1, any)))
+  # reject S
+  results[,2] <- sapply(res, function(x) mean(x[,1]))
+  # reject F
+  results[,3] <- sapply(res, function(x) mean(x[,2]))
+  # selecting dual primary
+  results[,4] <- sapply(res, function(x) mean(x[,3] & x[,4]))
+  # selecting S primary
+  results[,5] <- sapply(res, function(x) mean(x[,3] & !x[,4]))
+  # selecting F primary
+  results[,6] <- sapply(res, function(x) mean(!x[,3] & x[,4]))
+  # sample size
+  results[,7] <- sapply(res, function(x) mean(x[,5]))
+  # Sc futility rate
+  results[,8] <- sapply(res, function(x) mean(x[,6]))
+  ddd <- as.data.frame(results) %>% 
+    mutate(designs = designs, multiplicity = multiplicity, .before = 1) %>% 
+    mutate(scenario = i, .before = 1) %>% 
+    mutate(hrS = hrS, hrSc = hrSc, .after = scenario)
+  if(i==1){
+    outputs <- ddd
+  }else{
+    outputs <- bind_rows(outputs, ddd)
+  }
+}
+res.pr50.IF50 <- res.list
+(power.pr50.IF50 <- outputs)
+save.image("results.RData")
+```
+
+
+## When prevalence rate is 0.5 and IF is 0.30
+We will enroll $400$ subjects for the $S^c$ population. The accrual duration is also 20 months. The following code helps find the hazard ratio threshold for $S$, $F$ and $S^c$. 
+```{r}
+seed <- 202409
+nclust <- 10
+nsim_per_cluster <- 1000 # set at least 1000 for final report
+pr <- 0.5
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.3
+nS <- 400
+nF <- 400/pr
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+(dSpower <- thresholds$GSD.reject.S) # power for S if S is primary
+(dFpower <- thresholds$GSD.reject.F) # power for F if F is primary
+```
+
+### Power analysis 
+```{r}
+HRs <- cbind(hrS  = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+             hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2))
+results <- matrix(NA, nrow = 7, ncol = 8)
+colnames(results) <- c("Reject.SF", "Reject.S", "Reject.F", "Primary.SF", 
+                       "Primary.S", "Primary.F", "samplesize", "Futile.Sc")
+designs <- c(rep("AED", 2), rep("GSD", 3), rep("AED2", 2))
+multiplicity <- c(c("dunnett", "simes"), "ht", c("dunnett", "simes"), c("dunnett", "simes"))
+outputs <- data.frame()
+res.list <- list()
+for(i in 1:nrow(HRs)){
+  hrS <- HRs[i,1]
+  hrSc <- HRs[i,2]
+  res <- getOC_par(ncore=nclust, seed = seed, nsim = nsim_per_cluster, n = nF, prop_S = pr, 
+                   duration = accrual_duration, targetEvents.S = targetEvents_S, 
+                   HR.Sc.threshold = HR.Sc.threshold, HR.S.threshold = HR.S.threshold,
+                   HR.F.threshold = HR.F.threshold, hazard_S = log(2)/c(medS_con, medS_con/hrS), 
+                   hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), dropout_S = c(0, 0), 
+                   dropout_Sc = c(0, 0), w = 1, ratio = 1, alpha = alpha)
+  res.list[[i]] <- res
+  # reject S or F. 
+  results[,1] <- sapply(res, function(x) mean(apply(x[,1:2], 1, any)))
+  # reject S
+  results[,2] <- sapply(res, function(x) mean(x[,1]))
+  # reject F
+  results[,3] <- sapply(res, function(x) mean(x[,2]))
+  # selecting dual primary
+  results[,4] <- sapply(res, function(x) mean(x[,3] & x[,4]))
+  # selecting S primary
+  results[,5] <- sapply(res, function(x) mean(x[,3] & !x[,4]))
+  # selecting F primary
+  results[,6] <- sapply(res, function(x) mean(!x[,3] & x[,4]))
+  # sample size
+  results[,7] <- sapply(res, function(x) mean(x[,5]))
+  # Sc futility rate
+  results[,8] <- sapply(res, function(x) mean(x[,6]))
+  ddd <- as.data.frame(results) %>% 
+    mutate(designs = designs, multiplicity = multiplicity, .before = 1) %>% 
+    mutate(scenario = i, .before = 1) %>% 
+    mutate(hrS = hrS, hrSc = hrSc, .after = scenario)
+  if(i==1){
+    outputs <- ddd
+  }else{
+    outputs <- bind_rows(outputs, ddd)
+  }
+}
+res.pr50.IF30 <- res.list
+(power.pr50.IF30 <- outputs)
+save.image("results.RData")
+```
+
+## When prevalence rate is 0.5 and IF is 0.60
+We will enroll $400$ subjects for the $S^c$ population. The accrual duration is also 20 months. The following code helps find the hazard ratio threshold for $S$, $F$ and $S^c$. 
+```{r}
+seed <- 202409
+nclust <- 10
+nsim_per_cluster <- 1000 # set at least 1000 for final report
+pr <- 0.5
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.6
+nS <- 400
+nF <- 400/pr
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+(dSpower <- thresholds$GSD.reject.S) # power for S if S is primary
+(dFpower <- thresholds$GSD.reject.F) # power for F if F is primary
+```
+
+### Power analysis 
+```{r}
+HRs <- cbind(hrS  = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+             hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2))
+results <- matrix(NA, nrow = 7, ncol = 8)
+colnames(results) <- c("Reject.SF", "Reject.S", "Reject.F", "Primary.SF", 
+                       "Primary.S", "Primary.F", "samplesize", "Futile.Sc")
+designs <- c(rep("AED", 2), rep("GSD", 3), rep("AED2", 2))
+multiplicity <- c(c("dunnett", "simes"), "ht", c("dunnett", "simes"), c("dunnett", "simes"))
+outputs <- data.frame()
+res.list <- list()
+for(i in 1:nrow(HRs)){
+  hrS <- HRs[i,1]
+  hrSc <- HRs[i,2]
+  res <- getOC_par(ncore=nclust, seed = seed, nsim = nsim_per_cluster, n = nF, prop_S = pr, 
+                   duration = accrual_duration, targetEvents.S = targetEvents_S, 
+                   HR.Sc.threshold = HR.Sc.threshold, HR.S.threshold = HR.S.threshold,
+                   HR.F.threshold = HR.F.threshold, hazard_S = log(2)/c(medS_con, medS_con/hrS), 
+                   hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), dropout_S = c(0, 0), 
+                   dropout_Sc = c(0, 0), w = 1, ratio = 1, alpha = alpha)
+  res.list[[i]] <- res
+  # reject S or F. 
+  results[,1] <- sapply(res, function(x) mean(apply(x[,1:2], 1, any)))
+  # reject S
+  results[,2] <- sapply(res, function(x) mean(x[,1]))
+  # reject F
+  results[,3] <- sapply(res, function(x) mean(x[,2]))
+  # selecting dual primary
+  results[,4] <- sapply(res, function(x) mean(x[,3] & x[,4]))
+  # selecting S primary
+  results[,5] <- sapply(res, function(x) mean(x[,3] & !x[,4]))
+  # selecting F primary
+  results[,6] <- sapply(res, function(x) mean(!x[,3] & x[,4]))
+  # sample size
+  results[,7] <- sapply(res, function(x) mean(x[,5]))
+  # Sc futility rate
+  results[,8] <- sapply(res, function(x) mean(x[,6]))
+  ddd <- as.data.frame(results) %>% 
+    mutate(designs = designs, multiplicity = multiplicity, .before = 1) %>% 
+    mutate(scenario = i, .before = 1) %>% 
+    mutate(hrS = hrS, hrSc = hrSc, .after = scenario)
+  if(i==1){
+    outputs <- ddd
+  }else{
+    outputs <- bind_rows(outputs, ddd)
+  }
+}
+res.pr50.IF60 <- res.list
+(power.pr50.IF60 <- outputs)
+save.image("results.RData")
+```
+
+
+# References
+* Wassmer G, Pahlke F (2024). rpact: Confirmatory Adaptive Clinical Trial Design and Analysis. R package version 4.0.0, https://www.rpact.org/vignettes/planning/rpact_boundary_update_example/, https://www.rpact.com, https://github.com/rpact-com/rpact, https://rpact-com.github.io/rpact/, https://www.rpact.org.
+* Anderson K (2024). _gsDesign: Group Sequential Design_. R package version 3.6.2,
+  <https://CRAN.R-project.org/package=gsDesign>. https://cran.r-project.org/web/packages/gsDesign/vignettes/GentleIntroductionToGSD.html.
+* Miao, G., Liao, J. J., Yang, J., & Anderson, K. (2023). A gated group sequential design for seamless Phase II/III trial with subpopulation selection. BMC Medical Research Methodology, 23(1), 2.
+* 
+
+
+

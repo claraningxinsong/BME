@@ -1,24 +1,24 @@
 {
-    "id": "24003BFB",
-    "path": "C:/RPackage/BME/R/getZstats_IA.R",
-    "project_path": "R/getZstats_IA.R",
+    "id": "ADD59749",
+    "path": "C:/RPackage/BME/R/simu_single_arm.R",
+    "project_path": "R/simu_single_arm.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "1453206923",
     "contents": "",
     "dirty": false,
-    "created": 1750971547083.0,
+    "created": 1751053608423.0,
     "source_on_save": false,
-    "relative_order": 3,
+    "relative_order": 8,
     "properties": {
         "source_window_id": "",
         "Source": "Source"
     },
     "folds": "",
-    "lastKnownWriteTime": 1750908064,
+    "lastKnownWriteTime": 1750255831,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1750908064,
+    "last_content_update": 1750255831,
     "read_only": false,
     "read_only_alternatives": []
 }

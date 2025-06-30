@@ -16,6 +16,7 @@ getZtests_BME <- function(zstats, alpha1 = 0.0125, alpha2 = 0.0125){
   S_reject <- zstats$z.S > z.alpha1
   F_reject <- zstats$z.F > z.alpha2
 
-  return(list(S_reject = S_reject, F_reject = F_reject))
+  return(list(p_S = zstats$p.S, S_reject = S_reject,
+              p_F = zstats$p.F, F_reject = F_reject))
 
 }

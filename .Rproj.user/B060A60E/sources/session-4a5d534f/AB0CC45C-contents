@@ -5,7 +5,6 @@ output:
 ```{r}
 rm(list=ls())
 library(devtools)
-#if (!require("enrichDesign")) devtools::install_github("wonderzhm/enrichDesign")
 library(knitr)
 library(gsDesign)
 library(dplyr)
@@ -25,7 +24,7 @@ library(BME)
 ```{r}
 seed <- 202506
 nclust <- 10
-nsim_per_cluster <- 1000 # set at least 1000 for final report
+nsim_per_cluster <- 10000 # set at least 1000 for final report
 pr <- 0.5
 alpha <- 0.025
 medS_con <- 10
@@ -58,7 +57,7 @@ thresholds <- getDesignParameters(
 # generate data
 ```{r generate data}
 dat_initial <- simu_enrich_trial(n = 600, prop_S = 0.5, ratio = 1, duration = 20)
-dat_additional <- simu_enrich_trial(n = 200, prop_S = 0.5, ratio = 1, duration = 20) %>% 
+dat_additional <- simu_enrich_trial(n = 200, prop_S = 0.5, ratio = 1, duration = 3) %>% 
   filter(subgroup == 1) %>%
   dplyr::mutate(enterTime = .data$enterTime + 20, calendarTime = .data$calendarTime + 20)
 
@@ -70,8 +69,8 @@ dat_full <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup)
 ```{r IA}
 (zstats_IA <- getZstats_IA(dat_initial, targetEvents.Sc = 105))
 
-C <- thresholds$HR.Sc.threshold
-(expand <- zstats_IA$hr.Sc.IA < C)
+C <- 0.9
+(expand <- zstats_IA$hr.Sc.IA  C)
 ```
 
 # FA

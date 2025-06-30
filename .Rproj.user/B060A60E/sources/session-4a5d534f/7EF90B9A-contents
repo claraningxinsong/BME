@@ -1,0 +1,148 @@
+---
+output:
+  html_document: default
+---
+```{r}
+rm(list=ls())
+library(devtools)
+library(knitr)
+library(gsDesign)
+library(dplyr)
+library(rpact)
+library(ggplot2)
+library(ggh4x)
+library(ggpubr)
+library(scales)
+library(parallel)
+library(doParallel)
+library(survival)
+
+library(BME)
+```
+
+
+```{r}
+seed <- 202506
+nclust <- 10
+nsim_per_cluster <- 10000 # set at least 1000 for final report
+pr <- 0.5
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.5
+nS <- 300
+nF <- 600
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+```
+
+# get thresholds
+```{r thresholds}
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+```
+
+# generate data
+```{r generate data}
+dat_initial <- simu_enrich_trial(n = 600, prop_S = 0.5, ratio = 1, duration = 20)
+dat_additional <- simu_enrich_trial(n = 200, prop_S = 0.5, ratio = 1, duration = 3) %>% 
+  filter(subgroup == 1) %>%
+  dplyr::mutate(enterTime = .data$enterTime + 20, calendarTime = .data$calendarTime + 20)
+
+dat_full <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup)
+```
+
+
+# IA
+```{r IA}
+(zstats_IA <- getZstats_IA(dat_initial, targetEvents.Sc = 105))
+
+C <- 0.9
+(expand <- zstats_IA$hr.Sc.IA < C)
+```
+
+# FA
+```{r}
+(zstats_FA <- getZstats_FA(dat_initial, dat_additional, targetEvents = c(210, 280, 420), expand))
+```
+
+# hypothesis tests
+```{r}
+getZtests_BME(zstats_FA, alpha1 = 0.0125, alpha2 = 0.0125)
+```
+```{r}
+res <- getOC_BME(seed = 2025, nsim = 2, nF = 600, nS_additional = 100,  prop_S = 0.5,
+                  duration = 25, duration_additional = 3,
+                  targetEvents.Sc = 105,  targetEvents = c(210, 280, 420),
+                  HR.Sc.threshold = 0.9,
+                  hazard_S = c(1, 1), hazard_Sc = c(1, 1),
+                  dropout_S = c(0, 0), dropout_Sc = c(0, 0), w = 1, ratio = 1,
+                  alpha1 = 0.0125, alpha2 = 0.0125)
+
+res[[1]]
+```
+
+
+```{r}
+(p_S <- sapply(res, function(x) x$p_S))
+
+```
+
+
+
+
+```{r}
+HRs <- cbind(hrS  = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+             hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2))
+results <- matrix(NA, nrow =  nrow(HRs), ncol = 5)
+colnames(results) <- c("Power f", "Power S", "Overall Power", "Probability of Expansion", 
+                       "Average Sample Size")
+res.list <- list()
+
+for(i in 1:nrow(HRs)){
+  hrS <- HRs[i,1]
+  hrSc <- HRs[i,2]
+  res <- getOC_BME(seed = 2025, nsim = 10, nF = 600, nS_additional = 100,  prop_S = 0.5,
+                    duration = 25, duration_additional = 3,
+                    targetEvents.Sc = 105,  targetEvents = c(210, 280, 420),
+                    HR.Sc.threshold = 0.9,
+                    hazard_S = hrS, hazard_Sc = hrSc,
+                    dropout_S = c(0, 0), dropout_Sc = c(0, 0), w = 1, ratio = 1,
+                    alpha1 = 0.0125, alpha2 = 0.0125)
+  
+  res.list[[i]] <- res
+  
+  # Extract p-values
+  p_S <- sapply(res, function(x) x$p_S)
+  p_F <- sapply(res, function(x) x$p_F)
+  prob_expansion <- mean(sapply(res, function(x) x$expand), na.rm = TRUE)
+  avg_sample_size <- nF + mean(sapply(res, function(x) x$expand), na.rm = TRUE) * nS_additional
+
+
+  results[i, 1] <- mean(p_F, na.rm = TRUE)           # Avg p-value in F
+  results[i, 2] <- mean(p_S, na.rm = TRUE)           # Avg p-value in S
+  results[i, 3] <- mean(pmin(p_S, p_F), na.rm = TRUE)  # Avg of min p-value (overall)
+  results[i, 4] <- prob_expansion 
+  results[i, 5] <- avg_sample_size
+}
+
+# Final summary table
+outputs <- cbind(
+  Scenario = 1:nrow(HRs),
+  HR_for_BM_plus = HRs[, 1],
+  HR_for_BM_minus = HRs[, 2],
+  as.data.frame(results))
+```
+

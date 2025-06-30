@@ -1,6 +1,6 @@
 "0","seed <- 202506"
 "0","nclust <- 10"
-"0","nsim_per_cluster <- 1000 # set at least 1000 for final report"
+"0","nsim_per_cluster <- 10000 # set at least 1000 for final report"
 "0","pr <- 0.5"
 "0","alpha <- 0.025"
 "0","medS_con <- 10"
