@@ -37,8 +37,11 @@ getOC_BME <- function(seed = 2025, nsim = 1000, nF = 600, nS_additional = 100,  
 
   ## Start simulation
   set.seed(seed)
-
-  results <- vector("list", nsim)
+  results <- data.frame(
+    F.reject = logical(nsim),
+    S.reject = logical(nsim),
+    expand = logical(nsim)
+  )
 
 
   for(i in 1:nsim){
@@ -68,10 +71,9 @@ getOC_BME <- function(seed = 2025, nsim = 1000, nF = 600, nS_additional = 100,  
     reject <- getZtests_BME(zstats_FA, alpha1 = alpha1, alpha2 = alpha2)
 
     # Store results
-    results[[i]] <- list(
-      reject = reject,
-      expand = expand
-    )
+    results$F.reject[i] <- reject$F.reject
+    results$S.reject[i] <- reject$S.reject
+    results$expand[i] <- expand
   }
 
   return(results)

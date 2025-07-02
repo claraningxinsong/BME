@@ -3,7 +3,7 @@
     "path": "C:/RPackage/BME/R/getOC_par.R",
     "project_path": "R/getOC_par.R",
     "type": "r_source",
-    "hash": "2950917604",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1751051563328.0,
@@ -11,7 +11,9 @@
     "relative_order": 2,
     "properties": {
         "source_window_id": "",
-        "Source": "Source"
+        "Source": "Source",
+        "cursorPosition": "43,21",
+        "scrollLine": "24"
     },
     "folds": "",
     "lastKnownWriteTime": 1750255830,

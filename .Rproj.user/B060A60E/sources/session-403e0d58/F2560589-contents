@@ -13,10 +13,10 @@ getZtests_BME <- function(zstats, alpha1 = 0.0125, alpha2 = 0.0125){
   z.alpha1 <- qnorm(1 - alpha1)
   z.alpha2 <- qnorm(1 - alpha2)
 
-  S_reject <- zstats$z.S > z.alpha1
-  F_reject <- zstats$z.F > z.alpha2
+  S.reject <- zstats$z.S > z.alpha1
+  F.reject <- zstats$z.F > z.alpha2
 
-  return(list(p_S = zstats$p.S, S_reject = S_reject,
-              p_F = zstats$p.F, F_reject = F_reject))
+  return(list(p.S = zstats$p.S, S.reject = S.reject,
+              p.F = zstats$p.F, F.reject = F.reject))
 
 }
