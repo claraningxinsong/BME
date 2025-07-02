@@ -38,9 +38,9 @@ getOC_BME <- function(seed = 2025, nsim = 1000, nF = 600, nS_additional = 100,  
   ## Start simulation
   set.seed(seed)
   results <- data.frame(
-    F.reject = logical(nsim),
-    S.reject = logical(nsim),
-    expand = logical(nsim)
+    F.reject = numeric(nsim),
+    S.reject = numeric(nsim),
+    expand = numeric(nsim)
   )
 
 

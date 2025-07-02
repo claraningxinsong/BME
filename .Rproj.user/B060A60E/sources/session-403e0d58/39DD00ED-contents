@@ -2,12 +2,12 @@
 #'
 #' @param dat_initial Initial time-to-event dataset returned from \link{simu_enrich_trial}.
 #' @param dat_additional Additional time-to-event dataset returned from \link{simu_enrich_trial}.
-#' @param targetEvents A numeric vector of length 2, specifying the number of events for:
-#'        FA_S (final analysis in S), and  FA_F (final analysis in F).
+#' @param targetEvents A numeric vector of length 3, specifying the number of events for: FA_S_noexpand, FA_S_expand, FA_F.
 #' @param expand 0=No, 1=Yes
 #'
 #' @return It returns a list of test statistics used for later adjustments.
 #' @importFrom dplyr filter
+#' @importFrom magrittr %>%
 #' @export
 #'
 #' @examples

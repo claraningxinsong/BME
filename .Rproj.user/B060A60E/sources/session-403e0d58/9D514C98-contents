@@ -1,0 +1,26 @@
+#' Get adaptive enrichment design test statistics for a given trial.
+#'
+#' @param zstats An object returned by \link{getZstats_FA()}
+#' @param alpha1 Significance level for subgroup S
+#' @param alpha2 Significance level for full population F
+#'
+#' @return  A list indicating whether the null hypothesis is rejected in S and/or F
+#' @importFrom stats pnorm qnorm
+#' @export
+#'
+#' @examples
+#' d1 <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
+#' d2 <- simu_enrich_trial(n = 100, prop_S = 0.5, duration = 20)
+#' zstats <- getZstats_FA(d1, d2, targetEvents = c(210, 280, 420), expand=0)
+#' getZtests_BME(zstats, alpha1 = 0.0125, alpha2 = 0.0125)
+getZtests_BME <- function(zstats, alpha1 = 0.0125, alpha2 = 0.0125){
+  z.alpha1 <- qnorm(1 - alpha1)
+  z.alpha2 <- qnorm(1 - alpha2)
+
+  S.reject <- zstats$z.S > z.alpha1
+  F.reject <- zstats$z.F > z.alpha2
+
+  return(list(p.S = zstats$p.S, S.reject = S.reject,
+              p.F = zstats$p.F, F.reject = F.reject))
+
+}

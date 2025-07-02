@@ -10,6 +10,5 @@
 "0","library(scales)"
 "0","library(parallel)"
 "0","library(doParallel)"
-"0","library(survival)"
 "0",""
 "0","library(BME)"

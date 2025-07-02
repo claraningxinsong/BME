@@ -9,6 +9,10 @@
 #' @export A list indicating whether the null hypothesis is rejected in S and/or F
 #'
 #' @examples
+#' d1 <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
+#' d2 <- simu_enrich_trial(n = 100, prop_S = 0.5, duration = 20)
+#' zstats <- getZstats_FA(d1, d2, targetEvents = c(210, 280, 420), expand=0)
+#' getZtests_BME(zstats, alpha1 = 0.0125, alpha2 = 0.0125)
 getZtests_BME <- function(zstats, alpha1 = 0.0125, alpha2 = 0.0125){
   z.alpha1 <- qnorm(1 - alpha1)
   z.alpha2 <- qnorm(1 - alpha2)

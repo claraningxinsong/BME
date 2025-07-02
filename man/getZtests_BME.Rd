@@ -7,15 +7,21 @@
 getZtests_BME(zstats, alpha1 = 0.0125, alpha2 = 0.0125)
 }
 \arguments{
+\item{zstats}{An object returned by \link{getZstats_FA}}
+
 \item{alpha1}{Significance level for subgroup S}
 
 \item{alpha2}{Significance level for full population F}
-
-\item{zstatsAn}{object returned by getZstats_FA()}
 }
 \value{
-It returns a list of test statistics used for later adjustments.
+A list indicating whether the null hypothesis is rejected in S and/or F
 }
 \description{
 Get adaptive enrichment design test statistics for a given trial.
+}
+\examples{
+d1 <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
+d2 <- simu_enrich_trial(n = 100, prop_S = 0.5, duration = 20)
+zstats <- getZstats_FA(d1, d2, targetEvents = c(210, 280, 420), expand=0)
+getZtests_BME(zstats, alpha1 = 0.0125, alpha2 = 0.0125)
 }

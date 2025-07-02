@@ -15,7 +15,6 @@ library(ggpubr)
 library(scales)
 library(parallel)
 library(doParallel)
-library(survival)
 
 library(BME)
 ```
@@ -95,66 +94,6 @@ res
 ```
 
 # Simulation 5000
-```{r}
-# Define hazard ratios 
-HRs <- cbind(
-  hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
-  hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
-  )
-
-# Initialize results
-results <- matrix(NA, nrow = nrow(HRs), ncol = 5)
-colnames(results) <- c("Power F", 
-                       "Power S", 
-                       "Overall Power", 
-                       "Probability of Expansion", 
-                       "Average Sample Size")
-alpha1 = 0.0125
-alpha2 = 0.0125
-
-# Loop over each scenario
-for (i in 1:nrow(HRs)) {
-  # Run simulation
-  res <- getOC_BME(
-    seed = 2025,
-    nsim = 50,
-    nF = 600,
-    nS_additional = 100,
-    prop_S = 0.5,
-    duration = 20,
-    duration_additional = 3,
-    targetEvents.Sc = 105,
-    targetEvents = c(210, 280, 420),
-    HR.Sc.threshold = 0.9,
-    hazard_S  = log(2)/c(9, 9/HRs[i, "hrS"]), #currently assume med is same for BM+ and BM- in control
-    hazard_Sc = log(2)/c(9, 9/HRs[i, "hrSc"]),
-    dropout_S = c(0, 0),
-    dropout_Sc = c(0, 0),
-    w = 1,
-    ratio = 1,
-    alpha1 = 0.0125,
-    alpha2 = 0.0125
-  )
-
-  # Extract statistics
-  power.Fs <- sapply(res, function(x) x$F.reject)
-  power.Ss <- sapply(res, function(x) x$S.reject)
-  expansion <- sapply(res, function(x) x$expand)
-
-
-  # Store results
-  results[i, ] <- c(
-    mean(power.Fs),
-    mean(power.Ss),
-    mean(power.Fs | power.Ss),
-    mean(expansion),
-    600 + 100 * mean(expansion)
-  )
-}
-
-results_df <- as.data.frame(cbind(HRs, results))
-print(results_df)
-```
 
 ```{r}
 # Define hazard ratios 
@@ -211,8 +150,6 @@ print(results_df)
 ```
 
 ```{r}
-library(parallel)
-
 # Define hazard ratios 
 HRs <- cbind(
   hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
@@ -220,12 +157,12 @@ HRs <- cbind(
 )
 
 simulate_scenario <- function(i, HRs) {
-  hazard_S  <- log(2)/c(9, 9 / HRs[i, "hrS"])
+  hazard_S  <- log(2)/c(9, 9 / HRs[i, "hrS"]) #currently assume med is same for BM+ and BM- in control
   hazard_Sc <- log(2)/c(9, 9 / HRs[i, "hrSc"])
   
   res <- getOC_BME(
     seed = 2025 + i,
-    nsim = 50,
+    nsim = 5000,
     nF = 600,
     nS_additional = 100,
     prop_S = 0.5,
@@ -261,28 +198,24 @@ simulate_scenario <- function(i, HRs) {
 n_cores <- detectCores() - 1
 cl <- makeCluster(n_cores)
 
-# Load required packages inside each worker
+# Load required packages 
 clusterEvalQ(cl, {
-  library(dplyr)  # Required because arrange is used somewhere
+  library(dplyr)
 })
 
-# Export all required objects and functions
+# Export required objects and functions
 clusterExport(cl, varlist = c("HRs", "getOC_BME", "simulate_scenario", "log"))
 
-# Run simulation
+# simulation
 results_list <- parLapply(cl, 1:nrow(HRs), function(i) simulate_scenario(i, HRs))
 
-# Stop the cluster
+# Stop cluster
 stopCluster(cl)
 
-# Combine results
 results <- do.call(rbind, results_list)
 results_df <- as.data.frame(cbind(HRs, results))
 
-# Output
 print(results_df)
-
-
 ```
 
 

@@ -1,0 +1,24 @@
+{
+    "id": "9B22F4F3",
+    "path": "C:/RPackage/BME/R/simu_single_arm.R",
+    "project_path": "R/simu_single_arm.R",
+    "type": "r_source",
+    "hash": "1453206923",
+    "contents": "",
+    "dirty": false,
+    "created": 1751431081639.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1750255831,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1750255831,
+    "read_only": false,
+    "read_only_alternatives": []
+}

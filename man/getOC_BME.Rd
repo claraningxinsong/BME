@@ -2,7 +2,7 @@
 % Please edit documentation in R/getOC_BME.R
 \name{getOC_BME}
 \alias{getOC_BME}
-\title{Get operating characteristics via simulations for an enrichment design}
+\title{Get operating characteristics via simulations for an biomarker enrichment design}
 \usage{
 getOC_BME(
   seed = 2025,
@@ -10,7 +10,7 @@ getOC_BME(
   nF = 600,
   nS_additional = 100,
   prop_S = 0.5,
-  duration = 25,
+  duration = 20,
   duration_additional = 3,
   targetEvents.Sc = 105,
   targetEvents = c(210, 280, 420),
@@ -68,9 +68,8 @@ FA_S (final analysis in S), and  FA_F (final analysis in F).}
 It returns a list.
 }
 \description{
-Get operating characteristics via simulations for an enrichment design
+Get operating characteristics via simulations for an biomarker enrichment design
 }
 \examples{
-res <- getOC(seed = 24232, nsim=10)
-lapply(res, function(x) mean(apply(x[,1:2], 1, any, na.rm=TRUE)))
+getOC_BME(seed = 2025, nsim = 10, nF = 600, nS_additional = 100,  prop_S = 0.5,duration = 20)
 }

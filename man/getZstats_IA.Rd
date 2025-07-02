@@ -20,5 +20,5 @@ Get test statistics for a given trial.
 }
 \examples{
 d <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
-getZstats(d, targetEvents.Sc = 105)
+getZstats_IA(d, targetEvents.Sc = 105)
 }
