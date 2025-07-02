@@ -3,24 +3,24 @@
     "path": "C:/Users/songni60/Daiichi Sankyo Global/Zhou, Haiming - 2025 Internship/Ningxian Song/Simulation/BME example.Rmd",
     "project_path": null,
     "type": "r_markdown",
-    "hash": "1294052633",
+    "hash": "1163397693",
     "contents": "",
     "dirty": false,
     "created": 1751158710701.0,
     "source_on_save": false,
-    "relative_order": 6,
+    "relative_order": 5,
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "163,18",
-        "scrollLine": "162"
+        "cursorPosition": "119,13",
+        "scrollLine": "101"
     },
     "folds": "",
-    "lastKnownWriteTime": 1751252224,
+    "lastKnownWriteTime": 1751422479,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1751252224673,
+    "last_content_update": 1751422479280,
     "read_only": false,
     "read_only_alternatives": []
 }

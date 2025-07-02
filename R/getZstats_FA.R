@@ -60,5 +60,5 @@ getZstats_FA <- function(dat_initial, dat_additional, targetEvents, expand){
   # resulted test statistic
   return(list(z.S = z.S, z.F = z.F, p.S = p.S, p.F = p.F,
               obsEvents.S = obsEvents.S, obsEvents.F = obsEvents.F,
-              nS.FA = nS, nF.FA = nF, expand = expand))
+              nS.FA = nS, nF.FA = nF))
 }

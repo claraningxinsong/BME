@@ -49,7 +49,7 @@ getOC_BME <- function(seed = 2025, nsim = 1000, nF = 600, nS_additional = 100,  
 
     # Step 2: Interim analysis
     zstats_IA <- getZstats_IA(dat_initial, targetEvents.Sc = targetEvents.Sc)
-    expand <- zstats_IA$hr.Sc.IA < HR.Sc.threshold
+    expand <- zstats_IA$hr.Sc.IA > HR.Sc.threshold
 
     # Step 3: Simulate additional data if expand
     if (expand){
@@ -70,7 +70,7 @@ getOC_BME <- function(seed = 2025, nsim = 1000, nF = 600, nS_additional = 100,  
     # Store results
     results[[i]] <- list(
       reject = reject,
-      zstats_FA = zstats_FA
+      expand = expand
     )
   }
 

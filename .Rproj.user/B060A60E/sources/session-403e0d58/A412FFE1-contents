@@ -94,19 +94,13 @@ res <- getOC_BME(seed = 2025, nsim = 2, nF = 600, nS_additional = 100,  prop_S =
 res[1]
 ```
 
-
-```{r}
-(p_S <- sapply(res, function(x) x$p_S))
-
-```
-
 # Simulation 5000
 ```{r}
 # Define hazard ratios 
 HRs <- cbind(
   hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
   hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
-)
+  )
 
 # Initialize results
 results <- matrix(NA, nrow = nrow(HRs), ncol = 5)
@@ -115,13 +109,15 @@ colnames(results) <- c("Power f",
                        "Overall Power", 
                        "Probability of Expansion", 
                        "Average Sample Size")
+alpha1 = 0.0125
+alpha2 = 0.0125
 
 # Loop over each scenario
 for (i in 1:nrow(HRs)) {
   # Run simulation
   res <- getOC_BME(
     seed = 2025,
-    nsim = 5000,
+    nsim = 500,
     nF = 600,
     nS_additional = 100,
     prop_S = 0.5,
@@ -130,8 +126,8 @@ for (i in 1:nrow(HRs)) {
     targetEvents.Sc = 105,
     targetEvents = c(210, 280, 420),
     HR.Sc.threshold = 0.9,
-    hazard_S = rep(HRs[i, "hrS"], 2),
-    hazard_Sc = rep(HRs[i, "hrSc"], 2),
+    hazard_S  = log(2)/c(9, 9/HRs[i, "hrS"]), #currently assume med is same for BM+ and BM- in control
+    hazard_Sc = log(2)/c(9, 9/HRs[i, "hrSc"]),
     dropout_S = c(0, 0),
     dropout_Sc = c(0, 0),
     w = 1,
@@ -141,17 +137,15 @@ for (i in 1:nrow(HRs)) {
   )
 
   # Extract statistics
-  p_Fs <- sapply(res, function(x) x$zstats_FA$p.F)
-  p_Ss <- sapply(res, function(x) x$zstats_FA$p.S)
-  p_mins <- pmin(p_Fs, p_Ss)
-  expansion <- sapply(res, function(x) x$zstats_FA$expand)
-  avg_n <- sapply(res, function(x) x$zstats_FA$nS.FA + x$zstats_FA$nF.FA)
+  p_Fs <- sapply(res, function(x) x$reject$F_reject)
+  p_Ss <- sapply(res, function(x) x$reject$S_reject)
+  expansion <- sapply(res, function(x) x$expand)
 
   # Store results
   results[i, ] <- c(
     mean(p_Fs),
     mean(p_Ss),
-    mean(p_mins),
+    mean(p_Fs | p_Ss),
     mean(expansion),
     600 + 100 * mean(expansion)
   )
@@ -161,13 +155,15 @@ results_df <- as.data.frame(cbind(HRs, results))
 print(results_df)
 ```
 
+
 # Simulation 10000
+
 ```{r}
 # Define hazard ratios 
 HRs <- cbind(
   hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
   hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
-)
+  )
 
 # Initialize results
 results <- matrix(NA, nrow = nrow(HRs), ncol = 5)
@@ -176,6 +172,8 @@ colnames(results) <- c("Power f",
                        "Overall Power", 
                        "Probability of Expansion", 
                        "Average Sample Size")
+alpha1 = 0.0125
+alpha2 = 0.0125
 
 # Loop over each scenario
 for (i in 1:nrow(HRs)) {
@@ -191,8 +189,8 @@ for (i in 1:nrow(HRs)) {
     targetEvents.Sc = 105,
     targetEvents = c(210, 280, 420),
     HR.Sc.threshold = 0.9,
-    hazard_S = rep(HRs[i, "hrS"], 2),
-    hazard_Sc = rep(HRs[i, "hrSc"], 2),
+    hazard_S  = log(2)/c(9, 9/HRs[i, "hrS"]), #currently assume med is same for BM+ and BM- in control
+    hazard_Sc = log(2)/c(9, 9/HRs[i, "hrSc"]),
     dropout_S = c(0, 0),
     dropout_Sc = c(0, 0),
     w = 1,
@@ -202,17 +200,15 @@ for (i in 1:nrow(HRs)) {
   )
 
   # Extract statistics
-  p_Fs <- sapply(res, function(x) x$zstats_FA$p.F)
-  p_Ss <- sapply(res, function(x) x$zstats_FA$p.S)
-  p_mins <- pmin(p_Fs, p_Ss)
-  expansion <- sapply(res, function(x) x$zstats_FA$expand)
-  avg_n <- sapply(res, function(x) x$zstats_FA$nS.FA + x$zstats_FA$nF.FA)
+  p_Fs <- sapply(res, function(x) x$reject$F_reject)
+  p_Ss <- sapply(res, function(x) x$reject$S_reject)
+  expansion <- sapply(res, function(x) x$expand)
 
   # Store results
   results[i, ] <- c(
     mean(p_Fs),
     mean(p_Ss),
-    mean(p_mins),
+    mean(p_Fs | p_Ss),
     mean(expansion),
     600 + 100 * mean(expansion)
   )
@@ -220,3 +216,11 @@ for (i in 1:nrow(HRs)) {
 
 results_df <- as.data.frame(cbind(HRs, results))
 print(results_df)
+```
+
+
+
+
+
+
+
