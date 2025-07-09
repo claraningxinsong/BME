@@ -1,0 +1,311 @@
+---
+output:
+  html_document: default
+---
+```{r}
+rm(list=ls())
+library(devtools)
+library(knitr)
+library(gsDesign)
+library(dplyr)
+library(rpact)
+library(ggplot2)
+library(ggh4x)
+library(ggpubr)
+library(scales)
+library(parallel)
+library(doParallel)
+library(survival)
+
+library(BME)
+library(rpact)
+```
+
+
+```{r}
+seed <- 202506
+nclust <- 10
+nsim_per_cluster <- 10000 # set at least 1000 for final report
+pr <- 0.5
+alpha <- 0.025
+medS_con <- 10
+medSc_con <- 9
+accrual_duration <- 20
+IF <- 0.5
+nS <- 300
+nF <- 600
+nSc <- nF - nS
+hrS <- 0.7
+hrSc <- 0.85
+maturity <- 0.7
+(targetEvents_S <- c(nS*maturity*IF, nS*maturity))
+```
+
+# get thresholds
+```{r thresholds}
+(hrF <- exp(pr*log(hrS)+(1-pr)*log(hrSc))) # HR for F
+# find the thresholds
+thresholds <- getDesignParameters(
+  n = nF, prop_S = pr, duration = accrual_duration, targetEvents.S = targetEvents_S, 
+  CP.Sc.threshold = 0.2, CP.S.threshold = 0.8, CP.F.threshold = 0.8, 
+  hazard_S = log(2)/c(medS_con, medS_con/hrS), hazard_Sc = log(2)/c(medSc_con, medSc_con/hrSc), 
+  dropout_S = c(0, 0), dropout_Sc = c(0, 0), ratio = 1, alpha = alpha)
+(HR.S.threshold <- thresholds$HR.S.threshold)
+(HR.F.threshold <- thresholds$HR.F.threshold)
+(HR.Sc.threshold <- thresholds$HR.Sc.threshold)
+```
+
+# generate data
+```{r generate data}
+dat_initial <- simu_enrich_trial(n = 600, prop_S = 0.5, ratio = 1, duration = 20)
+dat_additional <- simu_enrich_trial(n = 200, prop_S = 0.5, ratio = 1, duration = 3) %>% 
+  filter(subgroup == 1) %>%
+  dplyr::mutate(enterTime = .data$enterTime + 20, calendarTime = .data$calendarTime + 20)
+
+dat_full <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup)
+```
+
+
+# IA
+```{r IA}
+(zstats_IA <- getZstats_IA(dat_initial, targetEvents.Sc = 105))
+
+C <- 0.9
+(expand <- zstats_IA$hr.Sc.IA < C)
+```
+
+# FA
+```{r}
+(zstats_FA <- getZstats_FA(dat_initial, dat_additional, targetEvents = c(210, 280, 420), expand))
+```
+
+# hypothesis tests
+```{r}
+getZtests_BME(zstats_FA, alpha1 = 0.0125, alpha2 = 0.0125)
+```
+```{r}
+res <- getOC_BME(seed = 2025, nsim = 2, nF = 600, nS_additional = 100,  prop_S = 0.5,
+                  duration = 20, duration_additional = 3,
+                  targetEvents.Sc = 105,  targetEvents = c(210, 280, 420),
+                  HR.Sc.threshold = 0.9,
+                  hazard_S = c(1, 1), hazard_Sc = c(1, 1),
+                  dropout_S = c(0, 0), dropout_Sc = c(0, 0), w = 1, ratio = 1,
+                  alpha1 = 0.0125, alpha2 = 0.0125)
+
+res
+```
+
+# Simulation 
+```{r}
+# Define hazard ratios 
+HRs <- cbind(
+  hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+  hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
+)
+
+# results matrix
+results <- matrix(NA, nrow = nrow(HRs), ncol = 5)
+colnames(results) <- c("Power F", "Power S", "Overall Power", "Probability of Expansion", "Average Sample Size")
+
+# Loop over scenarios
+for (i in 1:nrow(HRs)) {
+  res <- getOC_BME(
+    seed = 2025,
+    nsim = 50,
+    nF = 600,
+    nS_additional = 100,
+    prop_S = 0.5,
+    duration = 20,
+    duration_additional = 3,
+    targetEvents.Sc = 105,
+    targetEvents = c(210, 280, 420),
+    HR.Sc.threshold = 0.9,
+    hazard_S  = log(2)/c(9, 9 / HRs[i, "hrS"]),
+    hazard_Sc = log(2)/c(9, 9 / HRs[i, "hrSc"]),
+    dropout_S = c(0, 0),
+    dropout_Sc = c(0, 0),
+    w = 1,
+    ratio = 1,
+    alpha1 = 0.0125,
+    alpha2 = 0.0125
+  )
+
+    # Extract statistics
+    power.Fs <- res$F.reject
+    power.Ss <- res$S.reject
+    expansion <- res$expand
+    
+    # Store results
+    results[i, ] <- c(
+    mean(power.Fs),
+    mean(power.Ss),
+    mean(power.Fs | power.Ss),
+    mean(expansion),
+    600 + 100 * mean(expansion)
+  )
+}
+
+results_df <- as.data.frame(cbind(HRs, results))
+print(results_df)
+
+```
+
+
+# Loop in parallel
+```{r}
+HRs <- cbind(
+  hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+  hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
+)
+
+simulate_scenario <- function(i, HRs) {
+  hazard_S  <- log(2)/c(9, 9 / HRs[i, "hrS"]) #currently assume med is same for BM+ and BM- in control
+  hazard_Sc <- log(2)/c(9, 9 / HRs[i, "hrSc"])
+  
+  res <- getOC_BME(
+    seed = 2025 + i, #make sure scenarios are statistically independent 
+    nsim = 500,
+    nF = 600,
+    nS_additional = 100,
+    prop_S = 0.5,
+    duration = 20,
+    duration_additional = 3,
+    targetEvents.Sc = 105,
+    targetEvents = c(210, 280, 420),
+    HR.Sc.threshold = 0.9,
+    hazard_S  = hazard_S,
+    hazard_Sc = hazard_Sc,
+    dropout_S = c(0, 0),
+    dropout_Sc = c(0, 0),
+    w = 1,
+    ratio = 1,
+    alpha1 = 0.0125,
+    alpha2 = 0.0125
+  )
+  
+  power.Fs <- res$F.reject
+  power.Ss <- res$S.reject
+  expansion <- res$expand
+  
+  return(c(
+    Power_F = mean(power.Fs),
+    Power_S = mean(power.Ss),
+    Overall_Power = mean(power.Fs | power.Ss),
+    Prob_Expand = mean(expansion),
+    Avg_Sample_Size = 600 + 100 * mean(expansion)
+  ))
+}
+
+# Setup parallel cluster
+n_cores <- detectCores() - 1
+cl <- makeCluster(n_cores)
+
+clusterExport(cl, varlist = c("HRs", "getOC_BME", "simulate_scenario", "log"))
+
+# simulation
+results_list <- parLapply(cl, 1:nrow(HRs), function(i) simulate_scenario(i, HRs))
+
+# Stop cluster
+stopCluster(cl)
+
+results <- do.call(rbind, results_list)
+results_df <- as.data.frame(cbind(HRs, results))
+
+print(results_df)
+```
+
+
+# Add group sequential method
+## example
+```{r}
+library(rpact)
+
+# create group sequential designs for both
+design_S <- getDesignGroupSequential(kMax = 2, alpha = 0.0125, informationRates = c(0.5, 1))
+design_F <- getDesignGroupSequential(kMax = 3, alpha = 0.0125, informationRates = c(0.33, 0.67, 1))
+
+# Define Group Sequential Boundaries
+design_S
+```
+
+
+```{r}
+
+```
+```{r}
+# Subgroup
+dat_S <- subset(dat_full, subgroup == 1)
+design_S <- getDesignGroupSequential(kMax = 4, alpha = 0.0125, informationRates = c(0.2, 0.4, 0.7, 1))
+getZtest_GS(dat = dat_S, design = design_S)
+```
+
+```{r}
+res <- getOC_BME_GS(seed = 2025, nsim = 2, nF = 600, nS_additional = 100,  prop_S = 0.5,
+                    duration = 20, duration_additional = 3,
+                    targetEvents.Sc = 105, HR.Sc.threshold = 0.9,
+                    hazard_S = c(1, 1), hazard_Sc = c(1, 1),
+                    dropout_S = c(0, 0), dropout_Sc = c(0, 0), w = 1, ratio = 1,
+                    alpha1 = 0.0125, alpha2 = 0.0125,
+                    kMax_S = 2, informationRates_S = c(0.5,1), kMax_F = 2, informationRates_F = c(0.5, 1) )
+res
+```
+
+```{r}
+HRs <- cbind(
+  hrS = c(1, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7),
+  hrSc = c(1, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
+)
+
+simulate_scenario <- function(i, HRs) {
+  hazard_S  <- log(2)/c(9, 9 / HRs[i, "hrS"]) #currently assume med is same for BM+ and BM- in control
+  hazard_Sc <- log(2)/c(9, 9 / HRs[i, "hrSc"])
+  
+  res <- getOC_BME_GS(seed = 2025 + i, #make sure scenarios are statistically independent 
+                      nsim = 500,
+                      nF = 600, nS_additional = 100,
+                      prop_S = 0.5,
+                      duration = 20,
+                      duration_additional = 3,
+                      targetEvents.Sc = 105, HR.Sc.threshold = 0.9,
+                      hazard_S  = hazard_S, hazard_Sc = hazard_Sc,
+                      dropout_S = c(0, 0),
+                      dropout_Sc = c(0, 0),
+                      w = 1, ratio = 1,
+                      alpha1 = 0.0125, alpha2 = 0.0125,
+                      kMax_S = 2, informationRates_S = c(0.5,1), 
+                      kMax_F = 2, informationRates_F = c(0.5, 1)
+                    )
+                    
+  power.Fs <- res$F.reject
+  power.Ss <- res$S.reject
+  expansion <- res$expand
+  
+  return(c(
+    Power_F = mean(power.Fs),
+    Power_S = mean(power.Ss),
+    Overall_Power = mean(power.Fs | power.Ss),
+    Prob_Expand = mean(expansion),
+    Avg_Sample_Size = 600 + 100 * mean(expansion)
+  ))
+}
+
+# Setup parallel cluster
+n_cores <- detectCores() - 1
+cl <- makeCluster(n_cores)
+
+clusterExport(cl, varlist = c("HRs", "getOC_BME_GS", "simulate_scenario", "log"))
+
+# simulation
+results_list <- parLapply(cl, 1:nrow(HRs), function(i) simulate_scenario(i, HRs))
+
+# Stop cluster
+stopCluster(cl)
+
+results <- do.call(rbind, results_list)
+results_df <- as.data.frame(cbind(HRs, results))
+
+print(results_df)
+```
+
+
+

@@ -1,0 +1,90 @@
+#' Get operating characteristics via simulations for an biomarker enrichment design with group sequential method
+#'
+#' @param seed random seed for reproducibility
+#' @param nsim number of replicates
+#' @param nF total number of subjects for full population.
+#' @param nS_additional number of subjects for subgroup (BM+)
+#' @param prop_S proportion for sub-population group S.
+#' @param duration enrollment duration in months for full population
+#' @param duration_additional if expand, enrollment duration in months for additional patients in BM+
+#' @param targetEvents.Sc The target number of events in Sc; length of 1,
+#' futility or population selection will be given at IA without efficacy testing.
+#' @param HR.Sc.threshold Hazard ratio threshold for futility.
+#' @param hazard_S hazard rates (h_control, h_treatment) for S
+#' @param hazard_Sc hazard rates (h_control, h_treatment) for Sc
+#' @param dropout_S dropout hazard rates (h_control, h_treatment) for S
+#' @param dropout_Sc dropout hazard rates (h_control, h_treatment) for Sc
+#' @param w weight parameter in cumulative enrollment pattern.
+#' @param alpha1 Significance level for subgroup S
+#' @param alpha2 Significance level for full population F
+#' @param kMax_S maximum number of stages K for subgroup S. Must be a positive integer of length 1
+#' @param informationRates 	The information rates t_1, ..., t_kMax (that must be fixed prior to the trial), default is (1:kMax) / kMax for subgroup S.
+#' @param kMax_F maximum number of stages K for full population F. Must be a positive integer of length 1
+#' @param informationRates_F  The information rates t_1, ..., t_kMax (that must be fixed prior to the trial), default is (1:kMax) / kMax for full population F
+#' @param ratio randomization ratio r:1, where r refers to treatment arm; for equal randomization, r=1.
+#'
+#' @return It returns a list.
+#' @import dplyr rpact
+#' @importFrom magrittr %>%
+#' @export
+#'
+#' @examples
+#' getOC_BME(seed = 2025, nsim = 10, nF = 600, nS_additional = 100,  prop_S = 0.5,duration = 20)
+getOC_BME_GS <- function(seed = 2025, nsim = 1000, nF = 600, nS_additional = 100,  prop_S = 0.5,
+                      duration = 20, duration_additional = 3,
+                      targetEvents.Sc = 105, HR.Sc.threshold = 0.9,
+                      hazard_S = c(0.1, 0.1), hazard_Sc = c(0.12, 0.12),
+                      dropout_S = c(0, 0), dropout_Sc = c(0, 0), w = 1, ratio = 1,
+                      alpha1 = 0.0125, alpha2 = 0.0125,
+                      kMax_S = 2, informationRates_S = c(0.5,1), kMax_F = 2, informationRates_F = c(0.5, 1)    )
+  {
+
+  ## Start simulation
+  set.seed(seed)
+  results <- data.frame(
+    F.reject = numeric(nsim),
+    S.reject = numeric(nsim),
+    expand = numeric(nsim)
+  )
+
+
+  for(i in 1:nsim){
+    # Step 1: Simulate initial dataset
+    dat_initial <- simu_enrich_trial(n = nF, prop_S = prop_S, ratio = ratio, duration = duration,
+                                     hazard_S = hazard_S, hazard_Sc = hazard_Sc,
+                                     dropout_S = dropout_S, dropout_Sc = dropout_Sc, w = w)
+
+    # Step 2: Interim analysis
+    zstats_IA <- getZstats_IA(dat_initial, targetEvents.Sc = targetEvents.Sc)
+    expand <- zstats_IA$hr.Sc.IA > HR.Sc.threshold
+
+    # Step 3: Simulate additional data if expand
+    if (expand){
+      dat_additional <- simu_enrich_trial(n = nS_additional*2, prop_S = prop_S, ratio = ratio, duration = duration_additional,
+                                          hazard_S = hazard_S, dropout_S = dropout_S, w = w) %>%
+        filter(subgroup == 1) %>%
+        mutate(enterTime = enterTime + duration, calendarTime = calendarTime + duration)
+
+      dat_S <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup) %>%  filter(subgroup == 1)
+
+    } else {
+      dat_S <-dat_initial %>%  filter(subgroup == 1)
+    }
+
+    # Step 4: Group sequential loop
+    # get boundaries
+    design_S <- getDesignGroupSequential(kMax = kMax_S, alpha = alpha1, informationRates = informationRates_S)
+    design_F <- getDesignGroupSequential(kMax = kMax_F, alpha = alpha2, informationRates = informationRates_F)
+
+    # Step 5: get Z statistics and compare to boundaries
+    reject_S <- getZtest_GS(dat = dat_S, design = design_S)
+    reject_F <- getZtest_GS(dat = dat_initial, design = design_F)
+
+    # Store results
+    results$F.reject[i] <- reject_F$reject
+    results$S.reject[i] <- reject_S$reject
+    results$expand[i] <- expand
+  }
+
+  return(results)
+}

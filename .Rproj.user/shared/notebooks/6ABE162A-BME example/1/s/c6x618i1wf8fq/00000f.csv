@@ -1,0 +1,57 @@
+"0","library(rpact)"
+"0",""
+"0","# create group sequential designs for both"
+"0","design_S <- getDesignGroupSequential(kMax = 2, alpha = 0.0125, informationRates = c(0.5, 1))"
+"0","design_F <- getDesignGroupSequential(kMax = 3, alpha = 0.0125, informationRates = c(0.33, 0.67, 1))"
+"0",""
+"0","# Define Group Sequential Boundaries"
+"0","design_S"
+"1","Design parameters and output of "
+"1",""
+"1","group sequential design"
+"1",""
+"1",":
+
+"
+"1","User defined parameters:
+"
+"1","  Significance level                           : 0.0125 
+"
+"1","
+"
+"1","Derived from user defined parameters:
+"
+"1","  Maximum number of stages                     : 2 
+"
+"1","  Stages                                       : 1, 2 
+"
+"1","  Futility bounds (non-binding)                : -Inf 
+"
+"1","
+"
+"1","Default parameters:
+"
+"1","  Type of design                               : O'Brien & Fleming 
+"
+"1","  Information rates                            : 0.500, 1.000 
+"
+"1","  Type II error rate                           : 0.2000 
+"
+"1","  Binding futility                             : FALSE 
+"
+"1","  Test                                         : one-sided 
+"
+"1","  Tolerance                                    : 1e-08 
+"
+"1","
+"
+"1","Output:
+"
+"1","  Cumulative alpha spending                    : 0.0007297, 0.0125000 
+"
+"1","  Critical values                              : 3.183, 2.250 
+"
+"1","  Stage levels (one-sided)                     : 0.0007297, 0.0122097 
+"
+"1","
+"
