@@ -2,7 +2,7 @@
 % Please edit documentation in R/getZstats_FA.R
 \name{getZstats_FA}
 \alias{getZstats_FA}
-\title{Get test statistics for a given trial.}
+\title{Get Z-statistics for a given trial at final analysis}
 \usage{
 getZstats_FA(dat_initial, dat_additional, targetEvents, expand)
 }
@@ -19,7 +19,7 @@ getZstats_FA(dat_initial, dat_additional, targetEvents, expand)
 It returns a list of test statistics used for later adjustments.
 }
 \description{
-Get test statistics for a given trial.
+Get Z-statistics for a given trial at final analysis
 }
 \examples{
 d1 <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)

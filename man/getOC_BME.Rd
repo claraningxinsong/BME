@@ -43,8 +43,8 @@ getOC_BME(
 \item{targetEvents.Sc}{The target number of events in Sc; length of 1,
 futility or population selection will be given at IA without efficacy testing.}
 
-\item{targetEvents}{A numeric vector of length 2, specifying the number of events for:
-FA_S (final analysis in S), and  FA_F (final analysis in F).}
+\item{targetEvents}{A numeric vector of length 3, specifying the number of events for:
+final analysis in S without expansion, final analysis in S with expansion, and  final analysis in F.}
 
 \item{HR.Sc.threshold}{Hazard ratio threshold for futility.}
 

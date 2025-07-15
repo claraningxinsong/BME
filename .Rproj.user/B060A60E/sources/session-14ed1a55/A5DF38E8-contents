@@ -1,0 +1,55 @@
+#' Get Z-statistics and test results for Group Sequential method
+#'
+#' @param dat_S Dataset for subgroup S (BM+), with columns: surtime, event, trt
+#' @param design_S Group sequential design object from rpact::getDesignGroupSequential()
+#' @param n_target Total number of events planned for final analysis
+#'
+#' @return A list with Z-statistics, observed events, and rejection decision
+#'
+#' @export
+#' #' @examples
+#' d <- simu_enrich_trial(n = 200, prop_S = 0.5, duration = 10)
+#' design <- getDesignGroupSequential(kMax = 2, alpha = 0.0125, informationRates = c(0.5, 1))
+#' getZ_GS(d,design)
+getZ_GS <- function(dat, design) {
+  infoRates <- design$informationRates
+  criticalValues <- design$criticalValues
+  k <- design$kMax
+  n <- nrow(dat)
+
+  z_stats <- rep(NA,k)
+  reject <- FALSE
+  stopped_at <- NA
+
+  for (i in seq_len(k)) {
+    targetEvents <- ceiling(infoRates[i] * n)
+
+    # Cut data based on event count
+    d <- cut_by_event(dat, targetEvents = targetEvents)
+
+    # Perform one-sided log-rank test
+    res <- logrank.one.sided(
+      time = d$survTimeCut,
+      event = d$eventCut,
+      group = d$trt,
+      STRATA = NULL
+    )
+
+    z_stats[i] <- res$z
+
+    # Check for rejection
+    if (!is.na(res$z) && res$z > criticalValues[i]) {
+      return(list(
+        z = z_stats[1:i],
+        reject = TRUE,
+        stopped_at = i
+      ))
+    }
+  }
+
+  return(list(
+    z = z_stats,
+    reject = FALSE,
+    stopped_at = NA
+  ))
+}

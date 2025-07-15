@@ -2,7 +2,7 @@
 % Please edit documentation in R/getZstats_IA.R
 \name{getZstats_IA}
 \alias{getZstats_IA}
-\title{Get test statistics for a given trial.}
+\title{Get Z-statistics for a given trial at interim analysis.}
 \usage{
 getZstats_IA(dat, targetEvents.Sc)
 }
@@ -16,7 +16,7 @@ futility or population selection will be given at IA without efficacy testing.}
 It returns a list of test statistics used for later adjustments.
 }
 \description{
-Get test statistics for a given trial.
+Get Z-statistics for a given trial at interim analysis.
 }
 \examples{
 d <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)

@@ -13,7 +13,11 @@ simu_enrich_trial(
   hazard_Sc = c(0.11, 0.088),
   dropout_S = c(0, 0),
   dropout_Sc = c(0, 0),
-  w = 1
+  w = 1,
+  orr_S = 0.2,
+  orr_Sc = 0.2,
+  rho_S = 0.7,
+  rho_Sc = 0.7
 )
 }
 \arguments{
@@ -34,6 +38,14 @@ simu_enrich_trial(
 \item{dropout_Sc}{dropout hazard rates (h_control, h_treatment) for Sc}
 
 \item{w}{weight parameter in cumulative enrollment pattern.}
+
+\item{orr_S}{Objective response (binary: 1 = response, 0 = non-response) for S}
+
+\item{orr_Sc}{Objective response (binary: 1 = response, 0 = non-response) for Sc}
+
+\item{rho_S}{Correlation between ORR and time to event endpoint for S}
+
+\item{rho_Sc}{Correlation between ORR and time to event endpoint for Sc}
 }
 \value{
 A time-to-event dataset consists of

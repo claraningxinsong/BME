@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "C:/Users/songni60/AppData/Local/Programs/R/R-4.5.0/library",
+        "installDependencies": true
+    }
+}

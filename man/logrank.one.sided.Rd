@@ -7,33 +7,33 @@
 logrank.one.sided(time, event, group, STRATA = NULL)
 }
 \arguments{
-\item{time}{survival time}
+\item{time}{Survival time (numeric vector)}
 
-\item{event}{event status (0 = censor, 1 = event)}
+\item{event}{Event status (0 = censor, 1 = event; integer or logical vector)}
 
-\item{group}{group indicator (0 = control, 1 = experimental arm)}
+\item{group}{Group indicator (0 = control, 1 = experimental; must be binary)}
 
-\item{STRATA}{strata variable for stratified log-rank test}
+\item{STRATA}{Optional stratification variable}
 }
 \value{
+A list with:
 \describe{
-\item{z}{Test statistics z value}
-\item{p}{one sided p value}
+  \item{z}{Z-statistic from the one-sided logrank test}
+  \item{p}{One-sided p-value}
+  \item{obs}{Observed number of events per group}
 }
 }
 \description{
-This functions performs the one-sided logrank test. The standard logrank test in survival package
-only produces two-sided test. This function can facilitate one-sided logrank test. Larger z statistic indicates
-better treatment effect.
+This function performs a one-sided logrank test. The standard logrank test in the survival package
+only provides two-sided tests. This version facilitates one-sided testing where a larger z-statistic
+indicates better treatment effect (i.e., lower hazard).
 }
 \examples{
-
 n <- 100
 time <- c(rexp(n, rate=log(2)/12), rexp(n, rate=log(2)/12*1.2))
 event <- rep(1, n*2)
 group <- c(rep(0, n), rep(1, n))
 STRATA <- rep(c(0,1), n)
-
 logrank.one.sided(time, event, group, STRATA)
 
 }

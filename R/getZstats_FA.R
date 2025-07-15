@@ -1,4 +1,4 @@
-#' Get test statistics for a given trial.
+#' Get Z-statistics for a given trial at final analysis
 #'
 #' @param dat_initial Initial time-to-event dataset returned from \link{simu_enrich_trial}.
 #' @param dat_additional Additional time-to-event dataset returned from \link{simu_enrich_trial}.

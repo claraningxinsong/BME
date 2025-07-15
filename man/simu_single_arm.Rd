@@ -4,7 +4,15 @@
 \alias{simu_single_arm}
 \title{Simulate a single arm survival data with uniform enrollment distribution}
 \usage{
-simu_single_arm(n = 100, duration = 5, hazard = 0.1, dropout = 0, w = 1)
+simu_single_arm(
+  n = 100,
+  duration = 5,
+  hazard = 0.1,
+  orr = 0.2,
+  rho = 0.7,
+  dropout = 0,
+  w = 1
+)
 }
 \arguments{
 \item{n}{total number of subjects for full population.}
@@ -12,6 +20,10 @@ simu_single_arm(n = 100, duration = 5, hazard = 0.1, dropout = 0, w = 1)
 \item{duration}{enrollment duration in months; must be an integer.}
 
 \item{hazard}{hazard rate}
+
+\item{orr}{Objective response (binary: 1 = response, 0 = non-response)}
+
+\item{rho}{Correlation between ORR and time to event endpoint}
 
 \item{dropout}{dropout hazard rate}
 

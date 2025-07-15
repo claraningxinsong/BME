@@ -1,4 +1,4 @@
-#' Get test statistics for a given trial.
+#' Get Z-statistics for a given trial at interim analysis.
 #'
 #' @param dat A time-to-event dataset returned from \link{simu_enrich_trial}.
 #' @param targetEvents.Sc The target number of events in Sc; length of 1,
@@ -12,29 +12,40 @@
 #' @examples
 #' d <- simu_enrich_trial(n = 600, prop_S = 0.5, duration = 20)
 #' getZstats_IA(d, targetEvents.Sc = 105)
-getZstats_IA <- function(dat, targetEvents.Sc){
+getZstats_IA <- function(dat, targetEvents.Sc) {
+  ## Step 1: Subset for subgroup Sc
+  dSc <- dat %>% filter(.data$subgroup == 0)
 
-  ## split dataset by subgroup
-  dSc <- dat %>% filter(.data$subgroup==0)
+  ## Initialize outputs
+  z.Sc <- NA
+  p.Sc <- NA
+  obsEvents.Sc <- NA
+  hr.Sc.IA <- NA
 
-  ## initial results
-  z.Sc <- NA # z-statistics
-  p.Sc <- NA # p-values
-  obsEvents.Sc <- NA # observed number of events
-
-  ## cut data at IA
-  # population Sc
+  ## Step 2: Cut data by event count
   d <- cut_by_event(dSc, targetEvents = targetEvents.Sc)
+
+  # Check for failure
+  if (nrow(d) == 0 || !all(c("calendarCutoff", "survTimeCut", "eventCut", "trt") %in% names(d))) {
+    warning("cut_by_event() returned invalid or empty result in getZstats_IA()")
+    return(list(z.Sc = z.Sc, p.Sc = p.Sc, hr.Sc.IA = hr.Sc.IA, obsEvents.Sc = obsEvents.Sc))
+  }
+
+  ## Step 3: Perform one-sided log-rank test
   IA_time <- d$calendarCutoff[1]
-  res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut,
-                           group = d$trt, STRATA = NULL)
-  z.Sc <- res$z # non-adjusted Z statistic
+  res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut, group = d$trt, STRATA = NULL)
+
+  ## Step 4: Extract stats
+  z.Sc <- res$z
   p.Sc <- res$p
   obsEvents.Sc <- sum(res$obs)
-  hr.Sc.IA <- exp(-(res$z)/sqrt(1/sum(1/res$obs)))
+  hr.Sc.IA <- exp(-(res$z) / sqrt(1 / sum(1 / res$obs)))
 
-  # resulted test statistic
-  return(list(z.Sc = z.Sc, p.Sc = p.Sc,
-              hr.Sc.IA = hr.Sc.IA,
-              obsEvents.Sc = obsEvents.Sc))
+  ## Step 5: Return
+  return(list(
+    z.Sc = z.Sc,
+    p.Sc = p.Sc,
+    hr.Sc.IA = hr.Sc.IA,
+    obsEvents.Sc = obsEvents.Sc
+  ))
 }

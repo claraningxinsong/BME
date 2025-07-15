@@ -1,0 +1,43 @@
+#' Get Z-statistics for Group Sequential method
+#'
+#' @param targetEvents The target number of events
+#' @param dat A time-to-event dataset returned from \link{simu_enrich_trial}.
+#'
+#' @return It returns a list of Z statistics used for later adjustments and observed events number.
+#' @importFrom dplyr filter
+#' @export
+#'
+#' @examples
+#' d <- simu_enrich_trial(n = 200, prop_S = 0.5, duration = 10)
+#' targetEvents <- c(200, 300)
+#' getZstats_GS(d, targetEvents)
+getZstats_GS <- function(dat, targetEvents) {
+
+  d <- dat
+  targetEvents <- targetEvents
+  k <- length(targetEvents)
+
+  z <- rep(NA, k)
+  p <- rep(NA, k)
+  obsEvents <- rep(NA, k)
+
+
+  for (i in seq_len(k)) {
+
+    # Cut data based on event count
+    d <- cut_by_event(dat, targetEvents = targetEvents[i])
+
+    # Perform one-sided log-rank test
+    res <- logrank.one.sided(time = d$survTimeCut, event = d$eventCut,
+                            group = d$trt, STRATA = NULL)
+
+    z[i] <- res$z
+    p[i] <- res$p
+    obsEvents[i] <- sum(d$eventCut)
+  }
+
+   return(list(
+    z = z, p = p,
+    obsEvents = obsEvents
+  ))
+}
