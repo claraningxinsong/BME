@@ -1,0 +1,146 @@
+#' Get operating characteristics via simulations for an biomarker enrichment design with group sequential method
+#'
+#' @param seed random seed for reproducibility
+#' @param nsim number of replicates
+#' @param nF total number of subjects for full population.
+#' @param nS_additional number of subjects for subgroup (BM+)
+#' @param prop_S proportion for sub-population group S.
+#' @param duration enrollment duration in months for full population
+#' @param duration_additional if expand, enrollment duration in months for additional patients in BM+
+#' @param targetEvents.Sc The target number of events in Sc; length of 1,
+#' futility or population selection will be given at IA without efficacy testing.
+#' @param HR.Sc.threshold Hazard ratio threshold for futility.
+#' @param targetEvents.S.noexpand The target number of events in S without expansion
+#' @param targetEvents.S.expand The target number of events in S with expansion
+#' @param targetEvents.F  The target number of events in F
+#' @param hazard_S hazard rates (h_control, h_treatment) for S
+#' @param hazard_Sc hazard rates (h_control, h_treatment) for Sc
+#' @param dropout_S dropout hazard rates (h_control, h_treatment) for S
+#' @param dropout_Sc dropout hazard rates (h_control, h_treatment) for Sc
+#' @param w weight parameter in cumulative enrollment pattern.
+#' @param ratio randomization ratio r:1, where r refers to treatment arm; for equal randomization, r=1.
+#' @param orr_S Objective response (binary: 1 = response, 0 = non-response) for S
+#' @param orr_Sc Objective response (binary: 1 = response, 0 = non-response) for Sc
+#' @param rho_S Correlation between ORR and time to event endpoint for S
+#' @param rho_Sc Correlation between ORR and time to event endpoint for Sc
+#' @param alpha1 Significance level for subgroup S
+#' @param alpha2 Significance level for full population F
+#' @param selection "survival" or "orr:
+#' @param design_S_noexpand
+#' @param design_S_expand
+#' @param design_F
+#' @param orr_thres
+#' @param orr_number
+#'
+#' @return It returns a list.
+#' @import dplyr
+#' @importFrom magrittr %>%
+#' @export
+#'
+#' @examples
+#' getOC_BME(seed = 2025, nsim = 10, nF = 600, nS_additional = 100,  prop_S = 0.5,duration = 20)
+getOC_BME_GS_bydate <- function(seed = 2025, nsim = 1000, nF = 700, nS_additional = 150,  prop_S = 0.5,
+                         duration = 23, duration_additional = 5,
+                         cutTime = 20, HR.Sc.threshold = 0.9,
+                         targetEvents.S.noexpand = c(150, 210),
+                         targetEvents.S.expand = c(200, 280),
+                         targetEvents.F = c(300, 420),
+                         design_S_noexpand,
+                         design_S_expand,
+                         design_F,
+                         hazard_S = c(0.1, 0.1), hazard_Sc = c(0.12, 0.12),
+                         dropout_S = c(0, 0), dropout_Sc = c(0, 0), w = 1, ratio = 1,
+                         orr_S = c(0.2, 0.3) , orr_Sc = c(0.2, 0.4),
+                         rho_S = 0.7, rho_Sc = 0.7,
+                         alpha1 = 0.0125, alpha2 = 0.0125,
+                         selection = "survival",
+                         orr_thres = 0.1)
+{
+
+  ## Start simulation
+  set.seed(seed)
+  results <- data.frame(
+    F.reject = numeric(nsim),
+    S.reject = numeric(nsim),
+    expand = numeric(nsim),
+    timing.IA = numeric(nsim),
+    timing.F = numeric(nsim),
+    timing.s = numeric(nsim),
+    GSD_1stTime_F = numeric(nsim),
+    GSD_1stTime_S = numeric(nsim)
+  )
+
+
+  for(i in 1:nsim){
+    # Step 1: Simulate initial dataset
+    dat_initial <- simu_enrich_trial(n = nF, prop_S = prop_S, ratio = ratio, duration = duration,
+                                     hazard_S = hazard_S, hazard_Sc = hazard_Sc,
+                                     dropout_S = dropout_S, dropout_Sc = dropout_Sc, w = w,
+                                     orr_S = orr_S, orr_Sc = orr_Sc, rho_S = rho_S, rho_Sc = rho_Sc) %>%
+      arrange(enterTime)
+    dat_F <- dat_initial
+
+    # Step 2: Interim analysis
+    if (selection == "survival"){
+
+      zstats_IA <- getZstats_IA_bydate(dat_initial, cutTime = cutTime)
+      expand <- zstats_IA$hr.Sc.IA > HR.Sc.threshold
+
+      results$timing.IA <- zstats_IA$timing.IA
+
+    } else {
+
+      dSc <- dat_F %>% filter(.data$subgroup == 0) %>% arrange(enterTime) %>% filter(enterTime <= cutTime)
+
+      dSc_trt <- dSc %>% filter(trt == 1)
+      dSc_con <- dSc %>% filter(trt == 0)
+      orr_diff <- mean(dSc_trt$response) - mean(dSc_con$response)
+      expand <- orr_diff < orr_thres
+
+      results$timing.IA <- cutTime
+    }
+
+
+    # Step 3: Simulate additional data if expand
+    if (expand){
+      dat_additional <- simu_enrich_trial(n = nS_additional*2, prop_S = prop_S, ratio = ratio, duration = duration_additional,
+                                          hazard_S = hazard_S, dropout_S = dropout_S, w = w,
+                                          orr_S = orr_S, orr_Sc = orr_Sc, rho_S = rho_S, rho_Sc = rho_Sc) %>%
+        filter(subgroup == 1) %>%
+        mutate(enterTime = enterTime + duration, calendarTime = calendarTime + duration)  %>%
+        arrange(enterTime)
+
+      dat_S <- bind_rows(dat_initial, dat_additional) %>% arrange(subgroup) %>%  filter(subgroup == 1)
+
+      # Step 4: Group sequential loop
+      # get Z statistics
+      Zstats_S <- getZstats_GS(dat_S, targetEvents.S.expand)
+
+      # Step 5: Test: compare to critical boundaries
+      reject_S <- getZtest_GS(Zstats_S, design_S_expand)
+
+    } else {
+      dat_S <-dat_initial %>%  filter(subgroup == 1)
+
+      Zstats_S <- getZstats_GS(dat_S, targetEvents.S.noexpand)
+      reject_S <- getZtest_GS(Zstats_S, design_S_noexpand)
+    }
+
+
+    results$timing.S[i] <- reject_S$timing
+    Zstats_F <- getZstats_GS(dat_F, targetEvents.F)
+
+    results$GSD_1stTime_F[i] <- Zstats_F$GSD_1stTime
+    results$GSD_1stTime_S[i] <- Zstats_S$GSD_1stTime
+
+    reject_F <- getZtest_GS(Zstats_F, design_F)
+    results$timing.F[i] <- reject_F$timing
+
+    # Store results
+    results$F.reject[i] <- reject_F$reject
+    results$S.reject[i] <- reject_S$reject
+    results$expand[i] <- expand
+  }
+
+  return(results)
+}

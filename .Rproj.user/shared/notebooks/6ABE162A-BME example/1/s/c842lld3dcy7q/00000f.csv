@@ -1,0 +1,138 @@
+"0","library(rpact)"
+"0",""
+"0","design <- getDesignGroupSequential(kMax = 2, alpha = 0.0125, informationRates=c(5/7, 1))"
+"0",""
+"0","result <- getSampleSizeSurvival("
+"0","  design = design,"
+"0","  hazardRatio = 0.7,"
+"0","  allocationRatioPlanned = 1,"
+"0","  median1 = 9,"
+"0","  median2 = 9,"
+"0","  accrualTime = c(0, 20),"
+"0","  accrualIntensity = 0.1,"
+"0","#  followUpTime = 3,"
+"0","  dropoutRate1 = 0,"
+"0","  dropoutRate2 = 0,"
+"0","  maxNumberOfSubjects = 600"
+"0",")"
+"0",""
+"0","result"
+"1","Design plan parameters and output for "
+"1",""
+"1","survival data"
+"1",""
+"1",":
+
+"
+"1","Design parameters:
+"
+"1","  Information rates                            : 0.714, 1.000 
+"
+"1","  Critical values                              : 2.697, 2.279 
+"
+"1","  Futility bounds (non-binding)                : -Inf 
+"
+"1","  Cumulative alpha spending                    : 0.003503, 0.012500 
+"
+"1","  Local one-sided significance levels          : 0.003503, 0.011333 
+"
+"1","  Significance level                           : 0.0125 
+"
+"1","  Type II error rate                           : 0.2000 
+"
+"1","  Test                                         : one-sided 
+"
+"1","
+"
+"1","User defined parameters:
+"
+"1","  median(1)                                    : 9.0 
+"
+"1","  median(2)                                    : 9.0 
+"
+"1","  Hazard ratio                                 : 0.700 
+"
+"1","  Maximum number of subjects                   : 600 
+"
+"1","  Accrual time                                 : 20.00 
+"
+"1","
+"
+"1","Default parameters:
+"
+"1","  Theta H0                                     : 1 
+"
+"1","  Type of computation                          : Schoenfeld 
+"
+"1","  Planned allocation ratio                     : 1 
+"
+"1","  kappa                                        : 1 
+"
+"1","  Drop-out rate (1)                            : 0.000 
+"
+"1","  Drop-out rate (2)                            : 0.000 
+"
+"1","  Drop-out time                                : 12.00 
+"
+"1","
+"
+"1","Sample size and output:
+"
+"1","  Direction upper                              : FALSE 
+"
+"1","  lambda(1)                                    : 0.077 
+"
+"1","  lambda(2)                                    : 0.077 
+"
+"1","  Maximum number of subjects (1)               : 300 
+"
+"1","  Maximum number of subjects (2)               : 300 
+"
+"1","  Number of subjects [1]                       : 497.2 
+"
+"1","  Number of subjects [2]                       : 600 
+"
+"1","  Maximum number of events                     : 302.9 
+"
+"1","  Accrual intensity                            : 30.0 
+"
+"1","  Follow up time                               : 0.38 
+"
+"1","  Reject per stage [1]                         : 0.4707 
+"
+"1","  Reject per stage [2]                         : 0.3293 
+"
+"1","  Early stop                                   : 0.4707 
+"
+"1","  Analysis time [1]                            : 16.57 
+"
+"1","  Analysis time [2]                            : 20.38 
+"
+"1","  Expected study duration                      : 18.59 
+"
+"1","  Maximal study duration                       : 20.38 
+"
+"1","  Cumulative number of events [1]              : 216.3 
+"
+"1","  Cumulative number of events [2]              : 302.9 
+"
+"1","  Expected number of events under H0           : 302.6 
+"
+"1","  Expected number of events under H0/H1        : 295.7 
+"
+"1","  Expected number of events under H1           : 262.2 
+"
+"1","  Expected number of subjects under H1         : 551.6 
+"
+"1","  Critical values (treatment effect scale) [1] : 0.693 
+"
+"1","  Critical values (treatment effect scale) [2] : 0.770 
+"
+"1","
+"
+"1","Legend:
+"
+"1","  (i): values of treatment arm i
+"
+"1","  [k]: values at stage k
+"

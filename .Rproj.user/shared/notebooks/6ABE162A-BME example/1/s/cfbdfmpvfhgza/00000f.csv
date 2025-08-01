@@ -1,0 +1,8 @@
+"0","try(stopCluster(cl), silent = TRUE)"
+"0","rm(list = ls())"
+"0","gc()"
+"2","Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+"
+"2","Error in doWithOneRestart(return(expr), restart) : 
+  INTEGER() can only be applied to a 'integer', not a 'unknown type #29'
+"

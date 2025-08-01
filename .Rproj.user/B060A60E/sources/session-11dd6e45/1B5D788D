@@ -1,0 +1,27 @@
+{
+    "id": "1B5D788D",
+    "path": "C:/RPackage/BME/R/getOC_BME_GS_bydate.R",
+    "project_path": "R/getOC_BME_GS_bydate.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1753281450775.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "112,6",
+        "scrollLine": "100"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1753283325,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1753283325268,
+    "read_only": false,
+    "read_only_alternatives": []
+}

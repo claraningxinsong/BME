@@ -1,0 +1,26 @@
+{
+    "id": "61391BC2",
+    "path": "C:/RPackage/BME/R/getOC_BME.R",
+    "project_path": "R/getOC_BME.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1753933808633.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "30,29",
+        "scrollLine": "29"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1752780882,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1752780882,
+    "read_only": false,
+    "read_only_alternatives": []
+}
