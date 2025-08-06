@@ -12,7 +12,7 @@ getZstats_GS(dat, targetEvents)
 \item{targetEvents}{The target number of events}
 }
 \value{
-It returns a list of test statistics used for later adjustments.
+It returns a list of Z statistics used for later adjustments and observed events number.
 }
 \description{
 Get Z-statistics for Group Sequential method

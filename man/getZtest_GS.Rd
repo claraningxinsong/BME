@@ -7,21 +7,19 @@
 getZtest_GS(Zstats, design)
 }
 \arguments{
-\item{dat_S}{Dataset for subgroup S (BM+), with columns: surtime, event, trt}
+\item{Zstats}{A list of Z statistics returned from \link{getZstats_GS}}
 
-\item{design_S}{Group sequential design object from rpact::getDesignGroupSequential()}
-
-\item{n_target}{Total number of events planned for final analysis}
+\item{design}{Group sequential design parameters from \link{getDesignGroupSequential}}
 }
 \value{
-A list with Z-statistics, observed events, and rejection decision
+A list with Z-statistics and rejection decision
 }
 \description{
 Get test statistics for Group Sequential method
 }
 \examples{
 d <- simu_enrich_trial(n = 200, prop_S = 0.5, duration = 10)
-design <- getDesignGroupSequential(kMax = 2, alpha = 0.0125, informationRates = c(0.5, 1))
+design <- rpact::getDesignGroupSequential(kMax = 2, alpha = 0.0125, informationRates = c(0.5, 1))
 Zstats <- getZstats_GS(d, targetEvents = c(100,200))
 getZtest_GS(Zstats, design)
 }

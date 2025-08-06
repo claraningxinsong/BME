@@ -17,23 +17,24 @@ getOC_BME_GS(
   targetEvents.S.noexpand = c(150, 210),
   targetEvents.S.expand = c(200, 280),
   targetEvents.F = c(300, 420),
+  design_S_noexpand,
+  design_S_expand,
+  design_F,
   hazard_S = c(0.1, 0.1),
   hazard_Sc = c(0.12, 0.12),
   dropout_S = c(0, 0),
   dropout_Sc = c(0, 0),
   w = 1,
   ratio = 1,
-  orr_S = 0.2,
-  orr_Sc = 0.2,
+  orr_S = c(0.2, 0.3),
+  orr_Sc = c(0.2, 0.4),
   rho_S = 0.7,
   rho_Sc = 0.7,
   alpha1 = 0.0125,
   alpha2 = 0.0125,
-  kMax_S = 2,
-  informationRates_S = c(0.5, 1),
-  kMax_F = 2,
-  informationRates_F = c(0.5, 1),
-  selection = c("survival", "orr")
+  selection = "survival",
+  orr_thres = 0.1,
+  orr_number = 200
 )
 }
 \arguments{
@@ -86,15 +87,9 @@ futility or population selection will be given at IA without efficacy testing.}
 
 \item{alpha2}{Significance level for full population F}
 
-\item{kMax_S}{maximum number of stages K for subgroup S. Must be a positive integer of length 1}
+\item{selection}{"survival" or "orr:}
 
-\item{informationRates_S}{The information rates t_1, ..., t_kMax (that must be fixed prior to the trial), default is (1:kMax) / kMax for S}
-
-\item{kMax_F}{maximum number of stages K for full population F. Must be a positive integer of length 1}
-
-\item{informationRates_F}{The information rates t_1, ..., t_kMax (that must be fixed prior to the trial), default is (1:kMax) / kMax for F}
-
-\item{selection}{survival or orr}
+\item{orr_number}{}
 }
 \value{
 It returns a list.
